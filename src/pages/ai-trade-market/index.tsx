@@ -11,6 +11,7 @@ import {
   DEMO_BADGE_TEXT,
   DEMO_MARKET,
   DEMO_PRODUCT,
+  getProviderInfo,
   type MarketAnalysisResult,
   type ProductIntlInput
 } from '@/services/aiTrade'
@@ -66,6 +67,7 @@ export default function AiTradeMarket() {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<MarketAnalysisResult[] | null>(null)
   const [showSources, setShowSources] = useState(false)
+  const provider = useMemo(() => getProviderInfo(), [])
 
   const summary = useMemo(() => getSnapshotSummary(), [])
   const scores = useMemo(() => scoreMarkets(), [])
@@ -155,7 +157,7 @@ export default function AiTradeMarket() {
         ai_result: {...result, market_score: scores.find((item) => item.market === result.market)},
         status: 'draft',
         review_status: 'pending',
-        source: 'mock',
+        source: provider.isMock ? 'mock' : 'realtime',
         is_demo: isDemo
       })
       if (error) failed += 1
