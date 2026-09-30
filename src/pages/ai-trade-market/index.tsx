@@ -18,7 +18,8 @@ import {
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 import {
   MARKET_OPTIONS,
-  TRADE_DATA_SNAPSHOT,
+  fetchLiveTradeData,
+  getTradeDataSnapshot,
   getSnapshotSummary,
   scoreMarkets,
   type MarketScoreBreakdown
@@ -69,7 +70,11 @@ export default function AiTradeMarket() {
   const [showSources, setShowSources] = useState(false)
   const provider = useMemo(() => getProviderInfo(), [])
 
-  const summary = useMemo(() => getSnapshotSummary(), [])
+  const [liveData, setLiveData] = useState(false)
+  const [dataFetchedAt, setDataFetchedAt] = useState<string | null>(null)
+  const [dataVersion, setDataVersion] = useState(0)
+
+  const summary = useMemo(() => getSnapshotSummary(), [dataVersion])
   const scores = useMemo(() => scoreMarkets(), [])
   const selectedScore = useMemo<MarketScoreBreakdown | undefined>(() => {
     if (markets.length !== 1) return undefined
@@ -78,6 +83,11 @@ export default function AiTradeMarket() {
 
   useEffect(() => {
     getSKUList().then(({data}) => setProducts(data))
+    fetchLiveTradeData().then((result) => {
+      setLiveData(result.live)
+      setDataFetchedAt(result.fetchedAt || null)
+      setDataVersion((version) => version + 1)
+    })
   }, [])
 
   const buildInput = useCallback((sku: SKU): ProductIntlInput => ({
@@ -151,7 +161,7 @@ export default function AiTradeMarket() {
         input_data: {
           ...input,
           markets,
-          data_snapshot_ids: TRADE_DATA_SNAPSHOT.map((item) => item.id),
+          data_snapshot_ids: getTradeDataSnapshot().map((item) => item.id),
           score_model: 'scale30-growth25-digital20-cultural15-feasibility10'
         },
         ai_result: {...result, market_score: scores.find((item) => item.market === result.market)},
@@ -179,6 +189,11 @@ export default function AiTradeMarket() {
           </View>
         </View>
         <Text className="text-sm text-muted-foreground leading-relaxed">用可追溯的贸易数据辅助判断根书文创的试点市场。统计事实、AI推断和人工判断分别呈现。</Text>
+        <View className={`mt-2 self-start rounded-full px-2.5 py-1 ${liveData ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+          <Text className={`text-[10px] font-bold ${liveData ? 'text-emerald-700' : 'text-amber-700'}`}>
+            {liveData ? `WTO实时快照 · ${dataFetchedAt || '已刷新'}` : '课堂快照（实时数据未连接）'}
+          </Text>
+        </View>
       </View>
 
       <View className={SECTION_CLASS}>
@@ -238,7 +253,7 @@ export default function AiTradeMarket() {
           <View className="bg-muted/60 rounded-2xl p-3"><Text className="text-xl text-foreground font-black block">{summary.officialCount}</Text><Text className="text-xs text-muted-foreground">已核对官方指标</Text></View>
         </View>
         <View className="flex flex-row items-center justify-between mt-3" onClick={() => setShowSources((value) => !value)}><Text className="text-sm text-primary font-bold">{showSources ? '收起来源与口径' : '查看来源与口径'}</Text><View className={`i-mdi-chevron-${showSources ? 'up' : 'down'} text-primary text-lg`} /></View>
-        {showSources && <View className="mt-3 border-t border-border border-opacity-20 pt-3">{TRADE_DATA_SNAPSHOT.map((item) => <View key={item.id} className="mb-3"><View className="flex flex-row items-center justify-between"><Text className="text-xs text-foreground font-bold flex-1">{item.indicator} · {item.year}</Text><SourceBadge status={item.status} /></View><Text className="text-xs text-muted-foreground leading-relaxed mt-1">{item.value} {item.unit} · {item.definition}</Text><Text className="text-[10px] text-primary mt-1">{item.publisher} · {item.updatedAt}</Text></View>)}</View>}
+        {showSources && <View className="mt-3 border-t border-border border-opacity-20 pt-3">{getTradeDataSnapshot().map((item) => <View key={item.id} className="mb-3"><View className="flex flex-row items-center justify-between"><Text className="text-xs text-foreground font-bold flex-1">{item.indicator} · {item.year}</Text><SourceBadge status={item.status} /></View><Text className="text-xs text-muted-foreground leading-relaxed mt-1">{item.value} {item.unit} · {item.definition}</Text><Text className="text-[10px] text-primary mt-1">{item.publisher} · {item.updatedAt}</Text></View>)}</View>}
       </View>
 
       <View className={`rounded-2xl flex items-center justify-center py-4 mb-4 ${loading ? 'bg-primary/50' : 'bg-primary'}`} onClick={handleAnalyze}><Text className="text-base text-primary-foreground font-black">{loading ? 'AI正在整理证据…' : '生成市场分析'}</Text></View>

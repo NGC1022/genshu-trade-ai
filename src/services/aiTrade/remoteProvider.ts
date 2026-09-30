@@ -1,5 +1,5 @@
 import {supabase} from '@/client/supabase'
-import {TRADE_DATA_SNAPSHOT} from './tradeData'
+import {getTradeDataSnapshot} from './tradeData'
 import {PROMPT_MARKET_ANALYSIS} from './prompts'
 import {mockProvider} from './mockProvider'
 import type {AiTradeProvider} from './provider'
@@ -37,7 +37,7 @@ function asList(value: unknown): Record<string, unknown>[] {
 }
 
 async function callRemoteMarketAnalysis(input: ProductIntlInput, markets: string[]): Promise<unknown> {
-  const evidence = TRADE_DATA_SNAPSHOT.map((item) => ({
+  const evidence = getTradeDataSnapshot().map((item) => ({
     indicator: item.indicator,
     geography: item.geography,
     year: item.year,

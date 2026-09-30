@@ -1,3 +1,5 @@
+import {supabase} from '@/client/supabase'
+
 export type TradeDataStatus = 'official' | 'classroom_snapshot' | 'ai_inference'
 
 export interface TradeDataSnapshot {
@@ -196,6 +198,25 @@ export const TRADE_DATA_SNAPSHOT: TradeDataSnapshot[] = [
   }
 ]
 
+let activeTradeDataSnapshot: TradeDataSnapshot[] = TRADE_DATA_SNAPSHOT
+
+export function getTradeDataSnapshot() {
+  return activeTradeDataSnapshot
+}
+
+export async function fetchLiveTradeData(): Promise<{data: TradeDataSnapshot[]; live: boolean; fetchedAt?: string}> {
+  try {
+    const {data, error} = await supabase.functions.invoke('trade-data-sync', {body: {}})
+    const list = data && Array.isArray(data.data) ? (data.data as TradeDataSnapshot[]) : []
+    if (error || list.length === 0) throw error || new Error('实时贸易数据为空')
+    activeTradeDataSnapshot = [...TRADE_DATA_SNAPSHOT, ...list]
+    return {data: activeTradeDataSnapshot, live: true, fetchedAt: data.fetched_at}
+  } catch {
+    activeTradeDataSnapshot = TRADE_DATA_SNAPSHOT
+    return {data: TRADE_DATA_SNAPSHOT, live: false}
+  }
+}
+
 export const MARKET_OPTIONS = [
   {name: '美国', en: 'United States', note: '成熟消费市场，履约与合规信息需要进一步核验'},
   {name: '日本', en: 'Japan', note: '文化内容适配度较高，需验证价格和渠道'},
@@ -214,8 +235,9 @@ export function calculateCagr(start: number, end: number, years: number): number
 }
 
 export function getSnapshotSummary() {
-  const ecommerce = TRADE_DATA_SNAPSHOT.filter((item) => item.indicator === '跨境电商进出口规模').sort((a, b) => a.year - b.year)
-  const digital = TRADE_DATA_SNAPSHOT.filter((item) => item.indicator === '电信、计算机和信息服务进出口').sort((a, b) => a.year - b.year)
+  const snapshot = activeTradeDataSnapshot
+  const ecommerce = snapshot.filter((item) => item.indicator === '跨境电商进出口规模').sort((a, b) => a.year - b.year)
+  const digital = snapshot.filter((item) => item.indicator === '电信、计算机和信息服务进出口' || item.indicator === '数字化交付服务出口').sort((a, b) => a.year - b.year)
   const latestEcommerce = ecommerce[ecommerce.length - 1]
   const latestDigital = digital[digital.length - 1]
   return {
@@ -223,7 +245,7 @@ export function getSnapshotSummary() {
     digital,
     ecommerceYoY: ecommerce.length >= 2 ? calculateYoY(latestEcommerce.value, ecommerce[ecommerce.length - 2].value) : null,
     digitalCagr: digital.length >= 2 ? calculateCagr(digital[0].value, latestDigital.value, latestDigital.year - digital[0].year) : null,
-    officialCount: TRADE_DATA_SNAPSHOT.filter((item) => item.status === 'official').length
+    officialCount: snapshot.filter((item) => item.status === 'official').length
   }
 }
 
