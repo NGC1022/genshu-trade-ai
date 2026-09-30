@@ -6,6 +6,7 @@
 // API Key 保存于服务端环境变量，绝不写入前端代码。
 
 import {mockProvider} from './mockProvider'
+import {remoteProvider} from './remoteProvider'
 import type {
   ComplianceInput,
   ComplianceResult,
@@ -73,5 +74,5 @@ export interface AiTradeProvider {
  * 将来：接入真实AI后 return realProvider（Edge Function 版本）
  */
 export function getAiTradeProvider(): AiTradeProvider {
-  return mockProvider
+  return process.env.TARO_APP_AI_PROVIDER === 'remote' ? remoteProvider : mockProvider
 }
