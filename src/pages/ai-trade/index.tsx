@@ -1,239 +1,49 @@
-// AI跨境贸易助手主页：模块入口 + 业务流程 + 辅助功能
-
 import {Text, View} from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import {getProviderInfo} from '@/services/aiTrade'
 
-const FUNCTIONS = [
-  {
-    icon: 'i-mdi-earth',
-    color: 'bg-primary',
-    title: 'AI商品国际化',
-    desc: '一键生成英文商品信息',
-    url: '/pages/ai-trade-translate/index'
-  },
-  {
-    icon: 'i-mdi-chart-areaspline',
-    color: 'bg-secondary',
-    title: 'AI海外市场分析',
-    desc: '洞察四大目标市场',
-    url: '/pages/ai-trade-market/index'
-  },
-  {
-    icon: 'i-mdi-email-search-outline',
-    color: 'bg-accent',
-    title: 'AI跨境询盘',
-    desc: '意向识别 · 英文回复',
-    url: '/pages/ai-trade-inquiry/index'
-  },
-  {
-    icon: 'i-mdi-cash-multiple',
-    color: 'bg-chart-4',
-    title: 'AI报价工作台',
-    desc: '程序算价 · 版本管理',
-    url: '/pages/ai-trade-quote-workbench/index'
-  },
-  {
-    icon: 'i-mdi-shield-account-check-outline',
-    color: 'bg-primary',
-    title: 'AI贸易合规助手',
-    desc: 'HS编码初步建议',
-    url: '/pages/ai-trade-compliance/index'
-  },
-  {
-    icon: 'i-mdi-file-document-edit-outline',
-    color: 'bg-secondary',
-    title: 'AI贸易单证中心',
-    desc: '五类单证草稿生成',
-    url: '/pages/ai-trade-documents/index'
-  },
-  {
-    icon: 'i-mdi-account-group-outline',
-    color: 'bg-accent',
-    title: '海外客户CRM',
-    desc: '询盘沉淀 · 客户档案',
-    url: '/pages/ai-trade-customers/index'
-  },
-  {
-    icon: 'i-mdi-bullhorn-outline',
-    color: 'bg-chart-4',
-    title: 'AI海外营销素材',
-    desc: '海外社媒内容生成',
-    url: '/pages/ai-trade-marketing/index'
-  },
-  {
-    icon: 'i-mdi-robot-outline',
-    color: 'bg-muted',
-    title: 'AI跨境客服',
-    desc: '中英双语实时互译',
-    url: '/pages/ai-trade-support/index'
-  },
-  {
-    icon: 'i-mdi-alert-circle-check-outline',
-    color: 'bg-primary',
-    title: '订单异常中心',
-    desc: '异常识别 · AI建议',
-    url: '/pages/order-exceptions/index'
-  }
+const WORKFLOWS = [
+  {id: 'market', icon: 'i-mdi-chart-areaspline', title: '数字贸易分析', desc: '数据来源、趋势图和目标市场判断', color: 'bg-primary', url: '/pages/ai-trade-dashboard/index'},
+  {id: 'market-workbench', icon: 'i-mdi-earth-box', title: '海外市场分析', desc: '商品 × 市场 × AI机会评分', color: 'bg-teal-700', url: '/pages/ai-trade-market/index'},
+  {id: 'inquiry', icon: 'i-mdi-email-search-outline', title: '跨境询盘工作台', desc: '识别需求并生成英文回复', color: 'bg-amber-700', url: '/pages/ai-trade-inquiry/index'},
+  {id: 'compliance', icon: 'i-mdi-shield-check-outline', title: '贸易合规检查', desc: '初步识别资料缺口与风险', color: 'bg-slate-700', url: '/pages/ai-trade-compliance/index'}
 ]
 
-const FLOW_STEPS = [
-  '现有非遗商品',
-  'AI商品国际化',
-  'AI市场分析',
-  '海外客户询盘',
-  'AI识别需求',
-  'AI生成英文回复',
-  'AI辅助报价',
-  '人工确认',
-  '贸易合规检查',
-  '贸易单证生成',
-  '客户沉淀CRM',
-  '物流清关售后'
+const OPERATIONS = [
+  {id: 'translate', title: '商品国际化', desc: '英文标题、卖点和文化说明', url: '/pages/ai-trade-translate/index'},
+  {id: 'quote', title: '智能报价', desc: '程序算价，AI生成说明', url: '/pages/ai-trade-quote-workbench/index'},
+  {id: 'document', title: '贸易单证', desc: '生成待人工审核的单证草稿', url: '/pages/ai-trade-documents/index'},
+  {id: 'marketing', title: '海外营销素材', desc: 'Instagram、Facebook、TikTok内容', url: '/pages/ai-trade-marketing/index'}
 ]
+
+const SHOWCASE_STEPS = ['选择商品', '读取数据', 'AI解释', '人工确认', '导出报告']
 
 export default function AiTradeIndex() {
   const provider = getProviderInfo()
-
   const navigate = (url: string) => Taro.navigateTo({url})
 
   return (
     <View className="min-h-screen bg-background px-4 py-4">
-      {/* 头部说明 */}
-      <View className="bg-card rounded-[32px] p-6 shadow-card border border-border border-opacity-10 relative overflow-hidden mb-6">
-        <View className="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-2xl" />
+      <View className="bg-card rounded-[32px] p-6 shadow-card border border-border border-opacity-10 relative overflow-hidden mb-4">
+        <View className="absolute -top-14 -right-14 w-44 h-44 bg-primary/10 rounded-full" />
         <View className="relative z-10">
-          <View className="bg-primary/10 self-start px-3 py-1 rounded mb-3 inline-block">
-            <Text className="text-xs text-primary font-black uppercase tracking-widest">AI Trade Assistant</Text>
-          </View>
-          <Text className="text-2xl font-black text-foreground block mb-2 tracking-tight">AI跨境贸易助手</Text>
-          <Text className="text-base text-muted-foreground leading-relaxed">
-            面向根书非遗文创的跨境贸易全流程AI辅助，覆盖商品国际化、市场分析、询盘沟通与智能报价。
+          <View className="flex flex-row items-center justify-between mb-4"><View className="bg-primary/10 rounded-full px-3 py-1"><Text className="text-xs text-primary font-black tracking-[1px]">AI TRADE ASSISTANT</Text></View><View className="bg-emerald-50 rounded-full px-2.5 py-1"><Text className="text-[10px] text-emerald-700 font-bold">作业一展示版</Text></View></View>
+          <Text className="text-3xl text-foreground font-black block leading-tight">让根书文创
+            <Text className="text-primary"> 有证据地出海</Text>
           </Text>
-          {provider.isMock && (
-            <View className="flex flex-row items-start bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mt-4">
-              <View className="i-mdi-flask text-amber-500 text-lg mr-2" />
-              <Text className="text-sm text-amber-700 font-medium leading-relaxed flex-1">
-                当前为演示模式：AI能力由本地模拟服务提供（{provider.name}），生成结果仅供课堂演示，不代表真实AI输出。
-              </Text>
-            </View>
-          )}
+          <Text className="text-sm text-muted-foreground leading-relaxed block mt-3">从公开贸易数据到商品决策，把跨境业务中的资料整理、市场判断和沟通动作串成一条可复现的 AI 工作流。</Text>
+          <View className="flex flex-row gap-2 mt-5"><View className="flex-1 rounded-xl bg-primary flex items-center justify-center py-3" onClick={() => navigate('/pages/ai-trade-market/index')}><Text className="text-sm text-primary-foreground font-bold">开始市场分析</Text></View><View className="flex-1 rounded-xl bg-muted flex items-center justify-center py-3" onClick={() => navigate('/pages/ai-trade-dashboard/index')}><Text className="text-sm text-foreground font-bold">查看数据看板</Text></View></View>
+          {provider.isMock && <View className="flex flex-row items-start bg-amber-50 border border-amber-200 rounded-2xl px-3 py-2.5 mt-4"><View className="i-mdi-flask-outline text-amber-600 text-base mr-2 mt-0.5" /><Text className="text-xs text-amber-800 leading-relaxed flex-1">当前 AI 生成服务为演示 Provider；统计数据使用已审核快照，所有结论需人工复核。</Text></View>}
         </View>
       </View>
 
-      {/* 业务流程 */}
-      <View className="bg-card rounded-3xl p-6 shadow-card border border-border border-opacity-10 mb-6">
-        <View className="flex items-center mb-4">
-          <View className="w-1 h-5 bg-secondary rounded-full mr-2" />
-          <Text className="text-xl font-bold text-foreground tracking-wide">核心业务流程</Text>
-        </View>
-        <View className="flex flex-row flex-wrap gap-2">
-          {FLOW_STEPS.map((step, i) => (
-            <View key={i} className="flex flex-row items-center">
-              <View className="bg-muted rounded-full px-3 py-1.5">
-                <Text className="text-sm text-foreground font-medium">{step}</Text>
-              </View>
-              {i < FLOW_STEPS.length - 1 && (
-                <View className="i-mdi-chevron-right text-muted-foreground text-base mx-0.5" />
-              )}
-            </View>
-          ))}
-        </View>
-      </View>
+      <View className="bg-card rounded-[28px] p-5 border border-border border-opacity-10 mb-4"><View className="flex flex-row items-center justify-between mb-3"><View><Text className="text-lg text-foreground font-bold block">课堂展示主线</Text><Text className="text-xs text-muted-foreground mt-1">10—15分钟可完整跑通</Text></View><View className="i-mdi-presentation-play text-primary text-2xl" /></View><View className="flex flex-row items-center justify-between">{SHOWCASE_STEPS.map((step, index) => <View key={step} className="flex items-center"><View className={`w-8 h-8 rounded-full flex items-center justify-center ${index === 0 ? 'bg-primary' : 'bg-primary/10'}`}><Text className={`text-xs font-black ${index === 0 ? 'text-white' : 'text-primary'}`}>{index + 1}</Text></View><Text className="text-[10px] text-muted-foreground mt-1 text-center">{step}</Text></View>)}</View></View>
 
-      {/* 四大功能入口 */}
-      <View className="grid grid-cols-2 gap-4 mb-6">
-        {FUNCTIONS.map((fn, i) => (
-          <View
-            key={i}
-            className="bg-card rounded-3xl p-4 shadow-card border border-border border-opacity-10 active:scale-[0.98] transition-all"
-            onClick={() => navigate(fn.url)}>
-            <View className={`${fn.color} w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm mb-3`}>
-              <View className={`${fn.icon} text-xl text-white`} />
-            </View>
-            <Text className="text-base text-foreground font-bold tracking-tight block mb-1">{fn.title}</Text>
-            <Text className="text-sm text-muted-foreground">{fn.desc}</Text>
-          </View>
-        ))}
-      </View>
+      <View className="mb-4"><View className="flex flex-row items-end justify-between mb-3"><View><Text className="text-xl text-foreground font-black">核心工作台</Text><Text className="text-xs text-muted-foreground mt-1">优先展示能形成业务判断的功能</Text></View><Text className="text-xs text-primary font-bold">4 个模块</Text></View><View className="grid grid-cols-2 gap-3">{WORKFLOWS.map((item) => <View key={item.id} className="bg-card rounded-2xl p-4 border border-border border-opacity-10" onClick={() => navigate(item.url)}><View className={`${item.color} w-10 h-10 rounded-xl flex items-center justify-center mb-3`}><View className={`${item.icon} text-xl text-white`} /></View><Text className="text-sm text-foreground font-bold block">{item.title}</Text><Text className="text-xs text-muted-foreground leading-relaxed mt-1">{item.desc}</Text><View className="flex flex-row items-center mt-3"><Text className="text-xs text-primary font-bold">进入工作台</Text><View className="i-mdi-arrow-right text-primary text-sm ml-1" /></View></View>)}</View></View>
 
-      {/* AI风险提示中心（需求十八） */}
-      <View className="bg-card rounded-3xl p-5 shadow-card border border-amber-200/60 mb-6">
-        <View className="flex items-center mb-3">
-          <View className="w-1 h-5 bg-amber-400 rounded-full mr-2" />
-          <Text className="text-xl font-bold text-foreground tracking-wide">AI风险提示</Text>
-        </View>
-        <View className="flex flex-col gap-2">
-          {[
-            'AI不能直接保证实时关税、物流价格与海关归类结果',
-            'AI不能保证目的国最新法规与实际库存、最终成交价格',
-            '当前未接入实时外部数据库，市场与税费数据均为AI辅助分析',
-            '涉及价格、库存、物流、税费、贸易规则的内容须以实际业务资料和权威来源为准'
-          ].map((r, i) => (
-            <View key={i} className="flex flex-row items-start">
-              <View className="i-mdi-alert-outline text-amber-500 text-base mr-2 mt-0.5" />
-              <Text className="text-sm text-muted-foreground leading-relaxed flex-1">{r}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
+      <View className="bg-card rounded-[28px] p-5 border border-border border-opacity-10 mb-4"><View className="flex flex-row items-center justify-between mb-3"><Text className="text-lg text-foreground font-bold">业务自动化</Text><Text className="text-xs text-muted-foreground">AI辅助 · 人工确认</Text></View><View className="flex flex-col gap-2">{OPERATIONS.map((item) => <View key={item.id} className="flex flex-row items-center rounded-2xl bg-muted/50 p-3" onClick={() => navigate(item.url)}><View className="w-9 h-9 rounded-xl bg-white flex items-center justify-center mr-3"><View className="i-mdi-arrow-top-right text-primary text-lg" /></View><View className="flex-1"><Text className="text-sm text-foreground font-bold block">{item.title}</Text><Text className="text-xs text-muted-foreground mt-0.5">{item.desc}</Text></View><View className="i-mdi-chevron-right text-muted-foreground text-lg" /></View>)}</View></View>
 
-      {/* 辅助入口 */}
-      <View className="mb-6">
-        <View className="flex items-center mb-4">
-          <View className="w-1 h-5 bg-secondary rounded-full mr-2" />
-          <Text className="text-xl font-bold text-foreground tracking-wide">业务管理</Text>
-        </View>
-        <View className="flex flex-col gap-4">
-          <View
-            className="bg-card rounded-3xl p-5 shadow-card border border-border border-opacity-10 flex flex-row items-center active:scale-[0.98] transition-all"
-            onClick={() => navigate('/pages/ai-trade-records/index')}>
-            <View className="w-11 h-11 rounded-2xl bg-muted flex items-center justify-center mr-4">
-              <View className="i-mdi-file-document-multiple-outline text-xl text-foreground" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-base text-foreground font-bold tracking-tight block mb-0.5">AI业务记录</Text>
-              <Text className="text-sm text-muted-foreground">查看国际化、分析、询盘、报价全部记录</Text>
-            </View>
-            <View className="i-mdi-chevron-right text-muted-foreground text-xl" />
-          </View>
-          <View
-            className="bg-card rounded-3xl p-5 shadow-card border border-border border-opacity-10 flex flex-row items-center active:scale-[0.98] transition-all"
-            onClick={() => navigate('/pages/ai-trade-dashboard/index')}>
-            <View className="w-11 h-11 rounded-2xl bg-muted flex items-center justify-center mr-4">
-              <View className="i-mdi-monitor-dashboard text-xl text-foreground" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-base text-foreground font-bold tracking-tight block mb-0.5">AI业务数据看板</Text>
-              <Text className="text-sm text-muted-foreground">统计来自实际AI业务记录的使用数据</Text>
-            </View>
-            <View className="i-mdi-chevron-right text-muted-foreground text-xl" />
-          </View>
-          <View
-            className="bg-card rounded-3xl p-5 shadow-card border border-border border-opacity-10 flex flex-row items-center active:scale-[0.98] transition-all"
-            onClick={() => navigate('/pages/merchant-admin/index')}>
-            <View className="w-11 h-11 rounded-2xl bg-muted flex items-center justify-center mr-4">
-              <View className="i-mdi-storefront-outline text-xl text-foreground" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-base text-foreground font-bold tracking-tight block mb-0.5">商家运营后台</Text>
-              <Text className="text-sm text-muted-foreground">商品/SKU/订单/客户/售后一站式管理（需商家权限）</Text>
-            </View>
-            <View className="i-mdi-chevron-right text-muted-foreground text-xl" />
-          </View>
-        </View>
-      </View>
-
-      {/* 合规声明 */}
-      <View className="bg-muted/60 rounded-3xl p-5 mb-8">
-        <View className="flex flex-row items-center mb-2">
-          <View className="i-mdi-shield-check-outline text-muted-foreground text-lg mr-2" />
-          <Text className="text-sm text-muted-foreground font-bold">真实性与安全声明</Text>
-        </View>
-        <Text className="text-xs text-muted-foreground leading-relaxed">
-          所有AI生成内容均基于商品真实信息，不虚构认证、销量、排名、物流、评价等事实；市场数据不构成官方统计；所有内容须经人工确认后方可作为正式业务信息使用。
-        </Text>
-      </View>
+      <View className="bg-slate-900 rounded-[28px] p-5 mb-6"><View className="flex flex-row items-center mb-3"><View className="i-mdi-shield-check-outline text-emerald-300 text-lg mr-2" /><Text className="text-sm text-white font-bold">数据与 AI 使用边界</Text></View><Text className="text-xs text-slate-300 leading-relaxed">官方统计用于说明宏观趋势；AI 负责整理和解释；机会评分属于辅助判断；价格、库存、物流、关税、HS编码和法规必须由业务人员根据最新资料确认。</Text></View>
     </View>
   )
 }

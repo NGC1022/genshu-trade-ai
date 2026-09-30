@@ -41,6 +41,7 @@ import {
 
 export {DEMO_BADGE_TEXT, DEMO_INQUIRY, DEMO_MARKET, DEMO_PRODUCT, DEMO_QUOTE_INPUT} from './demoData'
 export {AI_DISCLAIMER} from './prompts'
+export * from './tradeData'
 export type {
   ComplianceInput,
   ComplianceResult,
