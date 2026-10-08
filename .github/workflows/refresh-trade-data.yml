@@ -1,0 +1,28 @@
+name: Refresh trade data and policy sources
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # UTC 18:00 = 北京时间次日 02:00
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refresh official sources
+        env:
+          FUNCTION_URL: ${{ secrets.SUPABASE_TRADE_REFRESH_URL }}
+          ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          REFRESH_SECRET: ${{ secrets.TRADE_REFRESH_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "$FUNCTION_URL"
+          test -n "$ANON_KEY"
+          test -n "$REFRESH_SECRET"
+          curl --fail-with-body --retry 3 --retry-delay 10 \
+            -X POST "$FUNCTION_URL" \
+            -H "Authorization: Bearer $ANON_KEY" \
+            -H "apikey: $ANON_KEY" \
+            -H "x-refresh-secret: $REFRESH_SECRET" \
+            -H "Content-Type: application/json" \
+            --data '{}'

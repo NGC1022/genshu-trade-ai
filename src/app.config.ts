@@ -71,6 +71,7 @@ const pages = [
   'pages/ai-trade-customer-detail/index',
   'pages/ai-trade-quote-workbench/index',
   'pages/ai-trade-marketing/index',
+  'pages/social-link/index',
   'pages/after-sales/index',
   'pages/order-exceptions/index',
   'pages/merchant-admin/index',
