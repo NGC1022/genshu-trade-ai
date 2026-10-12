@@ -22,7 +22,6 @@ interface CommentItemProps {
   currentUserRole?: string
   noteAuthorId: string
   authorFollowerIds?: string[]
-  currentUserFollowingIds?: string[]
   repliesCount?: number
   shouldHighlight?: boolean
   autoExpand?: boolean
@@ -38,7 +37,6 @@ export default function CommentItem({
   currentUserRole,
   noteAuthorId,
   authorFollowerIds = [],
-  currentUserFollowingIds = [],
   repliesCount = 0,
   shouldHighlight = false,
   autoExpand = false,
@@ -58,7 +56,6 @@ export default function CommentItem({
 
   const isAuthor = comment.user_id === noteAuthorId
   const isFollowerOfAuthor = authorFollowerIds.includes(comment.user_id)
-  const _isFollowingByCurrentUser = currentUserFollowingIds.includes(comment.user_id)
   const isAdmin = currentUserRole === 'admin' || currentUserRole === 'super_admin'
   const canDelete = currentUserId && (currentUserId === comment.user_id || isAdmin)
 
@@ -292,7 +289,6 @@ export default function CommentItem({
                         isAdmin={isAdmin}
                         noteAuthorId={noteAuthorId}
                         authorFollowerIds={authorFollowerIds}
-                        currentUserFollowingIds={currentUserFollowingIds}
                         shouldHighlight={highlightCommentId === reply.id}
                         onReply={onReply}
                         onReport={onReport}

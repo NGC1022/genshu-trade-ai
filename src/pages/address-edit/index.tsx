@@ -777,17 +777,9 @@ export default function AddressEdit() {
     })
   }
 
-  const _handleDistrictChange = (e: any) => {
-    const districtIndex = e.detail.value
-    const district = availableDistricts[districtIndex]
-    setFormData({
-      ...formData,
-      district
-    })
-  }
-
   // 粘贴板智能识别：读取剪贴板文本并自动拆分填入各字段
   const handlePaste = async () => {
+
     try {
       const {data} = await Taro.getClipboardData()
       const text = (data || '').trim()

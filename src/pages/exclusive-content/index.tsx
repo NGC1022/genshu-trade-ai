@@ -14,7 +14,7 @@ export default function ExclusiveContentDetail() {
   const loadData = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const {data, error} = await supabase.from('exclusive_content').select('*').eq('id', id).maybeSingle()
+    const {data} = await supabase.from('exclusive_content').select('*').eq('id', id).maybeSingle()
 
     if (data) {
       setContent(data)

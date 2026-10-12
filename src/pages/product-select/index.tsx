@@ -1,12 +1,11 @@
 import {Image, ScrollView, Text, View} from '@tarojs/components'
-import Taro, {useDidShow, useRouter} from '@tarojs/taro'
+import Taro, {useDidShow} from '@tarojs/taro'
 import {useState} from 'react'
 import {getSKUList} from '@/db/api'
 import type {SKU} from '@/db/types'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 
 export default function ProductSelect() {
-  const _router = useRouter()
   const [products, setProducts] = useState<SKU[]>([])
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
 

@@ -786,7 +786,6 @@ async function generateMarketingContent(input: MarketingInput): Promise<Marketin
 
   await mockDelay()
 
-  const _name = input.productName
   const material = ensureStr(input.material, '')
   const features = Array.isArray(input.features) ? input.features.filter(Boolean) : []
   const priceLine = input.price ? `from CNY ${input.price}` : ''

@@ -18,9 +18,9 @@ export default function MentionSelector({visible, searchText, excludeUserId, onS
   const loadUsers = useCallback(async () => {
     setLoading(true)
     const {data} = await searchUsers(searchText)
-    setUsers(data || [])
+    setUsers((data || []).filter((user: any) => user.id !== excludeUserId))
     setLoading(false)
-  }, [searchText])
+  }, [excludeUserId, searchText])
 
   useEffect(() => {
     if (visible && searchText) {
@@ -34,6 +34,10 @@ export default function MentionSelector({visible, searchText, excludeUserId, onS
 
   return (
     <View className="absolute bottom-full left-0 right-0 bg-white border border-border rounded-xl shadow-lg mb-2 max-h-[200px] overflow-hidden">
+      <View className="flex flex-row items-center justify-between px-4 py-2 border-b border-border">
+        <Text className="text-sm text-muted-foreground">选择要提及的用户</Text>
+        <View className="i-mdi-close text-lg text-muted-foreground" onClick={onClose} />
+      </View>
       <ScrollView className="w-full" scrollY style={{maxHeight: '200px'}}>
         {loading && (
           <View className="py-4 text-center">

@@ -13,7 +13,6 @@ interface ReplyItemProps {
   isAdmin: boolean
   noteAuthorId: string
   authorFollowerIds?: string[]
-  currentUserFollowingIds?: string[]
   shouldHighlight?: boolean
   onReply: (reply: NoteComment) => void
   onReport: (reply: NoteComment) => void
@@ -27,7 +26,6 @@ export default function ReplyItem({
   isAdmin,
   noteAuthorId,
   authorFollowerIds = [],
-  currentUserFollowingIds = [],
   shouldHighlight = false,
   onReply,
   onReport,
@@ -40,7 +38,6 @@ export default function ReplyItem({
 
   const isAuthor = reply.user_id === noteAuthorId
   const isFollowerOfAuthor = authorFollowerIds.includes(reply.user_id)
-  const _isFollowingByCurrentUser = currentUserFollowingIds.includes(reply.user_id)
 
   useEffect(() => {
     if (shouldHighlight) {

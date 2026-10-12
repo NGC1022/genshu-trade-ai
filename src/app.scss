@@ -153,3 +153,69 @@
     box-shadow: var(--shadow-card);
   }
 }
+
+/* 响应式产品壳：手机保持沉浸式全宽，电脑端使用舒适的居中工作区。 */
+html,
+body,
+#app {
+  min-height: 100%;
+  background: hsl(var(--background));
+}
+
+body {
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  #app {
+    min-height: 100vh;
+    max-width: 1440px;
+    margin: 0 auto;
+    box-shadow: 0 0 80px rgba(82, 11, 15, 0.08);
+  }
+
+  .taro_page > taro-view-core:first-child,
+  .taro_page > taro-scroll-view-core:first-child {
+    width: min(100%, 1280px);
+    margin-inline: auto;
+  }
+
+  .taro-tabbar__tabbar {
+    max-width: 1440px;
+    margin-inline: auto;
+  }
+
+  .taro_page {
+    font-size: 16px;
+  }
+
+  .taro_page .grid-cols-2 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .taro_page .grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .taro_page .grid-cols-2 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .taro_page .text-2xl {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .taro_page {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .taro_page input,
+  .taro_page textarea {
+    max-width: 100%;
+  }
+}

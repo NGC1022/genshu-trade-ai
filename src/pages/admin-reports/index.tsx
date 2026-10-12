@@ -159,46 +159,6 @@ export default function AdminReports() {
     })
   }
 
-  const _handleReject = async (report: any) => {
-    Taro.showModal({
-      title: '确认驳回举报',
-      content: '确定要驳回这个举报吗？',
-      success: async (res) => {
-        if (res.confirm) {
-          Taro.showLoading({title: '正在驳回...'})
-          try {
-            // 1. 更新举报状态
-            await updateReportStatus(report.id, 'rejected', contentType as 'note' | 'comment')
-
-            // 2. 发送消息给举报者
-            if (report.reporter_id) {
-              const contentTitle =
-                contentType === 'note'
-                  ? `笔记《${report.note?.title || '无标题'}》`
-                  : `评论内容“${(report.comment?.content || '').substring(0, 10)}...”`
-
-              await createMessage({
-                user_id: report.reporter_id,
-                type: 'report_rejected',
-                title: '举报反馈',
-                content: `您对${contentTitle}的举报经核实未违反规范，已被驳回。感谢您的监督。`,
-                related_note_id: contentType === 'note' ? report.note?.id : report.comment?.note_id
-              })
-            }
-
-            Taro.showToast({title: '已驳回举报', icon: 'success'})
-            loadReports(currentFilter === 'all' ? undefined : currentFilter)
-          } catch (e) {
-            console.error('驳回举报失败:', e)
-            Taro.showToast({title: '操作失败', icon: 'none'})
-          } finally {
-            Taro.hideLoading()
-          }
-        }
-      }
-    })
-  }
-
   const handleIgnore = async (report: any) => {
     Taro.showModal({
       title: '确认忽略',

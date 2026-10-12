@@ -47,7 +47,6 @@ export default function NoteDetail() {
   const [mentionSearchText, setMentionSearchText] = useState('')
   const [mentionStartIndex, setMentionStartIndex] = useState(-1)
   const [authorFollowerIds, setAuthorFollowerIds] = useState<string[]>([])
-  const [currentUserFollowingIds, setCurrentUserFollowingIds] = useState<string[]>([])
 
   const loadData = useCallback(async () => {
     if (!id) return
@@ -67,12 +66,6 @@ export default function NoteDetail() {
       // 获取笔记作者的粉丝 ID 列表，用于标识关注了作者的用户
       const {data: followerIds} = await getFollowerIds(data.user_id)
       setAuthorFollowerIds(followerIds || [])
-
-      // 获取当前用户关注的用户列表
-      if (user) {
-        const {data: userFollowing} = await import('@/db/api').then((m) => m.getFollowing(user.id))
-        setCurrentUserFollowingIds((userFollowing || []).map((f) => f.following_id))
-      }
 
       const {data: comms} = await getComments(id, {sortBy: commentSortBy, parentId: null})
       setComments(comms)
@@ -621,7 +614,6 @@ export default function NoteDetail() {
                   currentUserRole={user?.role}
                   noteAuthorId={note.user_id}
                   authorFollowerIds={authorFollowerIds}
-                  currentUserFollowingIds={currentUserFollowingIds}
                   repliesCount={commentRepliesCounts[c.id] || 0}
                   shouldHighlight={highlightCommentId === c.id}
                   autoExpand={highlightParentId === c.id}

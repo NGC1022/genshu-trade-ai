@@ -57,6 +57,7 @@ import type {
   UserCoupon,
   UserDailyQuizStats
 } from './types'
+import {DEMO_CATALOG, getDemoSKU} from '@/data/demoCatalog'
 
 const BUCKET_NAME = 'app-9dlnarhqk45d_images'
 
@@ -98,7 +99,9 @@ export async function getSKUList(category?: string) {
     query = query.eq('category', category)
   }
   const {data, error} = await query
-  return {data: (Array.isArray(data) ? data : []) as SKU[], error}
+  const onlineData = (Array.isArray(data) ? data : []) as SKU[]
+  const fallbackData = category ? DEMO_CATALOG.filter((item) => item.category === category) : DEMO_CATALOG
+  return {data: onlineData.length > 0 ? onlineData : fallbackData, error: onlineData.length > 0 ? error : null}
 }
 
 export async function getSKUDetail(skuCode: string) {
@@ -108,7 +111,7 @@ export async function getSKUDetail(skuCode: string) {
     .eq('sku_code', skuCode)
     .eq('is_active', true)
     .maybeSingle()
-  return {data: data as SKU | null, error}
+  return {data: (data as SKU | null) || getDemoSKU(skuCode), error: data ? error : null}
 }
 
 // 更新SKU资料（国际化字段/库存等，仅商家角色可调用，RLS限制）

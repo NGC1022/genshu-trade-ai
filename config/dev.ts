@@ -71,7 +71,7 @@ export default {
           server.ws.on?.('connection', flushPendingFullReload)
 
           // 提供接口切换 HMR
-          server.middlewares.use('/innerapi/v1/sourcecode/__hmr_off', (req, res) => {
+          server.middlewares.use('/innerapi/v1/sourcecode/__hmr_off', (_req, res) => {
             hmrEnabled = false
             let body = {
               status: 0,
@@ -81,7 +81,7 @@ export default {
             res.end(JSON.stringify(body))
           })
 
-          server.middlewares.use('/innerapi/v1/sourcecode/__hmr_on', (req, res) => {
+          server.middlewares.use('/innerapi/v1/sourcecode/__hmr_on', (_req, res) => {
             hmrEnabled = true
             flushPendingFullReload()
             let body = {
@@ -93,7 +93,7 @@ export default {
           })
 
           // 注册一个 HTTP API，用来手动触发一次整体刷新
-          server.middlewares.use('/innerapi/v1/sourcecode/__hmr_reload', (req, res) => {
+          server.middlewares.use('/innerapi/v1/sourcecode/__hmr_reload', (_req, res) => {
             if (hmrEnabled) {
               server.ws.send({
                 type: 'full-reload',

@@ -44,7 +44,7 @@ export default function PremiumCustomization() {
     setLoading(true)
 
     try {
-      const {data, error} = await createCustomizationOrder({
+      const {error} = await createCustomizationOrder({
         user_id: user.id,
         type: 'premium',
         requirements: formData,
