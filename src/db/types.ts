@@ -174,6 +174,8 @@ export interface SKU {
   stock_available: number
   stock_reserved: number
   stock_sold: number
+  monthly_sold?: number | null
+  last_sold_at?: string | null
   is_active: boolean
   // 国际化与跨境贸易扩展字段（商品国际化资料完整度检查依据）
   name_en?: string | null

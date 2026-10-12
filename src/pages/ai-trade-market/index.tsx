@@ -214,7 +214,7 @@ export default function AiTradeMarket() {
                 <Image src={product.image_url || DEFAULT_PRODUCT_IMAGE} mode="aspectFill" className="w-12 h-12 rounded-xl mr-3" />
                 <View className="flex-1 min-w-0">
                   <Text className="text-sm text-foreground font-bold truncate block">{product.name}</Text>
-                  <Text className="text-xs text-muted-foreground mt-1">¥{Number(product.price || 0).toFixed(2)} · {product.category === 'premium' ? '高端定制' : '标准文创'}</Text>
+                  <Text className="text-xs text-muted-foreground mt-1">¥{Number(product.price || 0).toFixed(2)} · {product.category === 'premium' ? '高端定制' : '标准文创'} · 月销 {product.monthly_sold ?? Math.round(Number(product.stock_sold || 0) * 0.35)}</Text>
                 </View>
                 {active && <View className="i-mdi-check-circle text-primary text-xl" />}
               </View>
