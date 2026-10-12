@@ -154,6 +154,54 @@
   }
 }
 
+/* 文字排版底线：长句必须自然换行，正文和标题不能被挤成一条横线。 */
+.taro-text-core {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.taro-view-core {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* 通过 ?preview=desktop / ?preview=mobile 提供两种稳定展示尺寸。 */
+html[data-preview='desktop'] body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+html[data-preview='desktop'] #app {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+}
+
+html[data-preview='mobile'] body {
+  width: 100%;
+  max-width: 390px;
+  margin-inline: auto;
+  background: #f7f4ef;
+}
+
+html[data-preview='mobile'] #app {
+  width: 100%;
+  max-width: 390px;
+  margin-inline: auto;
+  overflow-x: hidden;
+  box-shadow: 0 0 32px rgba(82, 11, 15, 0.12);
+}
+
+@media (min-width: 1024px) {
+  .taro_page > taro-view-core:first-child,
+  .taro_page > taro-scroll-view-core:first-child {
+    width: min(100%, 1180px);
+    margin-inline: auto;
+  }
+}
+
 /* 响应式产品壳：手机保持沉浸式全宽，电脑端使用舒适的居中工作区。 */
 html,
 body,
@@ -218,4 +266,19 @@ body {
   .taro_page textarea {
     max-width: 100%;
   }
+}
+
+/* AI 分析内容使用明确的标签—正文节奏，长文本不与相邻字段粘连。 */
+.ai-analysis-section {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.ai-analysis-section > taro-text-core,
+.ai-analysis-section > text {
+  display: block;
+  width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
