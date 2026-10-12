@@ -3,9 +3,10 @@
 import {createClient} from '@supabase/supabase-js'
 import Taro, {showToast} from '@tarojs/taro'
 
-const supabaseUrl: string = process.env.TARO_APP_SUPABASE_URL!
-const supabaseAnonKey: string = process.env.TARO_APP_SUPABASE_ANON_KEY || 'TOKEN'
-const appId: string = process.env.TARO_APP_APP_ID!
+// 未配置后端时仍允许 H5 预览渲染；真实环境必须通过环境变量注入正式地址和 anon key。
+const supabaseUrl: string = process.env.TARO_APP_SUPABASE_URL || 'https://preview-placeholder.supabase.co'
+const supabaseAnonKey: string = process.env.TARO_APP_SUPABASE_ANON_KEY || 'preview-placeholder-anon-key'
+const appId: string = process.env.TARO_APP_APP_ID || 'genshu-trade-ai-preview'
 
 let noticed = false
 export const customFetch: typeof fetch = async (url: string, options: RequestInit) => {
