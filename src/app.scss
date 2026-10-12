@@ -237,21 +237,28 @@ body {
     font-size: 16px;
   }
 
-  .taro_page .grid-cols-2 {
+  .preview-home-page .home-product-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .taro_page .grid-cols-4 {
+  .preview-home-page .home-quick-nav {
+    max-width: 720px;
+    margin-inline: auto;
+  }
+
+  .preview-home-page .home-hero {
+    height: 380px;
+  }
+
+  .preview-products-page .product-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
   }
 }
 
 @media (min-width: 1200px) {
-  .taro_page .grid-cols-2 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .taro_page .text-2xl {
+  html[data-preview='desktop'] .preview-home-page .text-2xl,
+  html[data-preview='desktop'] .preview-products-page .text-2xl {
     font-size: 1.75rem;
   }
 }
@@ -266,6 +273,33 @@ body {
   .taro_page textarea {
     max-width: 100%;
   }
+}
+
+/* 桌面版和手机版使用不同的阅读节奏，后续更新可以分别调整而不互相污染。 */
+html[data-preview='desktop'] .preview-home-page,
+html[data-preview='desktop'] .preview-products-page {
+  font-size: 16px;
+}
+
+html[data-preview='desktop'] .preview-home-page > taro-scroll-view-core > taro-view-core,
+html[data-preview='desktop'] .preview-products-page > taro-view-core {
+  max-width: 1180px;
+  margin-inline: auto;
+}
+
+html[data-preview='mobile'] .preview-home-page,
+html[data-preview='mobile'] .preview-products-page {
+  font-size: 14px;
+}
+
+html[data-preview='mobile'] .preview-home-page .home-hero {
+  height: 256px;
+}
+
+html[data-preview='mobile'] .preview-home-page .home-product-grid,
+html[data-preview='mobile'] .preview-products-page .product-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 /* AI 分析内容使用明确的标签—正文节奏，长文本不与相邻字段粘连。 */

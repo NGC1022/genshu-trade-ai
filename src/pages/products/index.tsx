@@ -59,7 +59,7 @@ export default function Products() {
   }
 
   return (
-    <View className="min-h-screen bg-gradient-subtle">
+    <View className="min-h-screen bg-gradient-subtle preview-products-page">
       <View className="mx-auto max-w-[1180px] px-4 py-5 md:px-8 md:py-8">
         <View className="mb-5">
           <Text className="text-xs tracking-[2px] text-primary font-black">ROOT CULTURE / SHOP</Text>
@@ -126,7 +126,7 @@ export default function Products() {
             <Text className="text-sm text-muted-foreground">没有找到匹配的商品</Text>
           </View>
         ) : (
-          <View className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5 pb-10">
+          <View className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5 pb-10 product-grid">
             {filteredProducts.map((product) => (
               <View
                 key={product.id}

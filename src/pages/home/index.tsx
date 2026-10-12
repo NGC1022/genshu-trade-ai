@@ -5,6 +5,7 @@ import {getParkAnnouncements, getSKUList, getTicketTypeList} from '@/db/api'
 import type {SKU, TicketType} from '@/db/types'
 import {t} from '@/utils/i18n'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
+import {DEMO_CATALOG} from '@/data/demoCatalog'
 
 interface Announcement {
   id: string
@@ -15,7 +16,7 @@ interface Announcement {
 }
 
 export default function Home() {
-  const [featuredProducts, setFeaturedProducts] = useState<SKU[]>([])
+  const [featuredProducts, setFeaturedProducts] = useState<SKU[]>(DEMO_CATALOG.slice(0, 4))
   const [tickets, setTickets] = useState<TicketType[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
 
@@ -56,7 +57,7 @@ export default function Home() {
 
   const loadData = useCallback(async () => {
     const {data: products} = await getSKUList()
-    setFeaturedProducts(products.slice(0, 4))
+    setFeaturedProducts((products.length > 0 ? products : DEMO_CATALOG).slice(0, 4))
 
     const {data: ticketData} = await getTicketTypeList()
     setTickets(ticketData)
@@ -137,11 +138,11 @@ export default function Home() {
   }
 
   return (
-    <View className="bg-gradient-subtle">
+    <View className="bg-gradient-subtle preview-home-page">
       <ScrollView className="min-h-screen" scrollY>
         {/* 轮播图 */}
         <Swiper
-          className="w-full h-64"
+          className="w-full h-64 home-hero"
           indicatorDots
           indicatorActiveColor="#FAC356"
           indicatorColor="rgba(255, 255, 255, 0.6)"
@@ -212,7 +213,7 @@ export default function Home() {
           )}
 
           {/* 快捷导航 - 圆形设计 */}
-          <View className="grid grid-cols-4 gap-4 mb-8">
+          <View className="grid grid-cols-4 gap-4 mb-8 home-quick-nav">
             <View
               className="flex flex-col items-center group active:scale-95 transition-transform"
               onClick={navigateToProducts}>
@@ -246,6 +247,64 @@ export default function Home() {
               <Text className="text-base text-accent font-bold tracking-tight">会员中心</Text>
             </View>
           </View>
+
+          {/* 精选文创 - 不规则卡片 */}
+          <View className="mb-8">
+            <View className="flex items-center justify-between mb-4">
+              <View className="flex items-center">
+                <View className="w-1 h-5 bg-primary rounded-full mr-2 shadow-sm" />
+                <Text className="text-xl font-bold text-accent tracking-wide">{t('featured')}</Text>
+              </View>
+              <View className="flex items-center active:opacity-60 transition-opacity" onClick={navigateToProducts}>
+                <Text className="text-base text-muted-foreground mr-1">{t('view_more')}</Text>
+                <View className="i-mdi-chevron-right text-muted-foreground" />
+              </View>
+            </View>
+
+            {/* 根宝IP新品推荐 */}
+            <View
+              className="bg-gradient-primary rounded-[32px] p-6 mb-6 shadow-elegant relative overflow-hidden active:scale-[0.98] transition-all"
+              onClick={navigateToProducts}>
+              <View className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+              <View className="flex flex-row items-center justify-between relative z-10">
+                <View className="flex-1 mr-4">
+                  <View className="bg-white/20 self-start px-2 py-0.5 rounded mb-2 inline-block">
+                    <Text className="text-xs text-white font-black uppercase tracking-widest">New Arrival</Text>
+                  </View>
+                  <Text className="text-2xl font-black text-white block mb-2 tracking-tight">根宝IP周边新品上市</Text>
+                  <Text className="text-base text-white/80 leading-relaxed">
+                    钥匙扣、徽章、抱枕、帆布袋现已开启发售，快来带根宝回家吧！
+                  </Text>
+                </View>
+                <View className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center shadow-sm backdrop-blur-sm">
+                  <View className="i-mdi-gift-outline text-4xl text-white" />
+                </View>
+              </View>
+            </View>
+
+            <View className="grid grid-cols-2 gap-4 home-product-grid">
+              {featuredProducts.map((product) => (
+                <View
+                  key={product.id}
+                  className="bg-card overflow-hidden shadow-card border border-border border-opacity-10 rounded-3xl active:scale-[0.98] transition-all"
+                  onClick={() => navigateToProductDetail(product.sku_code)}>
+                  <Image src={product.image_url || DEFAULT_PRODUCT_IMAGE} className="w-full h-44" mode="aspectFill" />
+                  <View className="p-4">
+                    <Text className="text-base font-bold text-foreground mb-1.5 line-clamp-1">{product.name}</Text>
+                    <View className="flex items-center justify-between">
+                      <Text className="text-xl font-black text-primary">¥{product.price}</Text>
+                      {product.category === 'premium' && (
+                        <View className="bg-secondary/20 px-2 py-0.5 rounded-lg border border-secondary/30">
+                          <Text className="text-xs text-accent font-bold uppercase">{t('premium')}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
 
           {/* 新增看板 - 数字IP专区 */}
           <View
@@ -320,63 +379,6 @@ export default function Home() {
                     <View className={`${app.icon} text-xl text-white -rotate-12`} />
                   </View>
                   <Text className="text-base text-foreground font-bold tracking-tight">{app.name}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* 精选文创 - 不规则卡片 */}
-          <View className="mb-8">
-            <View className="flex items-center justify-between mb-4">
-              <View className="flex items-center">
-                <View className="w-1 h-5 bg-primary rounded-full mr-2 shadow-sm" />
-                <Text className="text-xl font-bold text-accent tracking-wide">{t('featured')}</Text>
-              </View>
-              <View className="flex items-center active:opacity-60 transition-opacity" onClick={navigateToProducts}>
-                <Text className="text-base text-muted-foreground mr-1">{t('view_more')}</Text>
-                <View className="i-mdi-chevron-right text-muted-foreground" />
-              </View>
-            </View>
-
-            {/* 根宝IP新品推荐 */}
-            <View
-              className="bg-gradient-primary rounded-[32px] p-6 mb-6 shadow-elegant relative overflow-hidden active:scale-[0.98] transition-all"
-              onClick={navigateToProducts}>
-              <View className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
-              <View className="flex flex-row items-center justify-between relative z-10">
-                <View className="flex-1 mr-4">
-                  <View className="bg-white/20 self-start px-2 py-0.5 rounded mb-2 inline-block">
-                    <Text className="text-xs text-white font-black uppercase tracking-widest">New Arrival</Text>
-                  </View>
-                  <Text className="text-2xl font-black text-white block mb-2 tracking-tight">根宝IP周边新品上市</Text>
-                  <Text className="text-base text-white/80 leading-relaxed">
-                    钥匙扣、徽章、抱枕、帆布袋现已开启发售，快来带根宝回家吧！
-                  </Text>
-                </View>
-                <View className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center shadow-sm backdrop-blur-sm">
-                  <View className="i-mdi-gift-outline text-4xl text-white" />
-                </View>
-              </View>
-            </View>
-
-            <View className="grid grid-cols-2 gap-4">
-              {featuredProducts.map((product) => (
-                <View
-                  key={product.id}
-                  className="bg-card overflow-hidden shadow-card border border-border border-opacity-10 rounded-3xl active:scale-[0.98] transition-all"
-                  onClick={() => navigateToProductDetail(product.sku_code)}>
-                  <Image src={product.image_url || DEFAULT_PRODUCT_IMAGE} className="w-full h-44" mode="aspectFill" />
-                  <View className="p-4">
-                    <Text className="text-base font-bold text-foreground mb-1.5 line-clamp-1">{product.name}</Text>
-                    <View className="flex items-center justify-between">
-                      <Text className="text-xl font-black text-primary">¥{product.price}</Text>
-                      {product.category === 'premium' && (
-                        <View className="bg-secondary/20 px-2 py-0.5 rounded-lg border border-secondary/30">
-                          <Text className="text-xs text-accent font-bold uppercase">{t('premium')}</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
                 </View>
               ))}
             </View>
