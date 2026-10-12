@@ -99,15 +99,18 @@ export default function AiTradeDashboard() {
   if (loading) return <View className="min-h-screen bg-background flex items-center justify-center"><Text className="text-sm text-muted-foreground">正在整理数据看板…</Text></View>
 
   return (
-    <View className="min-h-screen bg-background px-4 py-4">
-      <View className="mb-5"><Text className="text-xs text-primary font-black tracking-[2px]">AI TRADE / DASHBOARD</Text><View className="flex flex-row items-center justify-between mt-1"><Text className="text-2xl text-foreground font-black">数字贸易数据看板</Text><SourceBadge tone="snapshot">课堂展示版</SourceBadge></View><Text className="text-sm text-muted-foreground leading-relaxed mt-2">将跨境电商货物贸易、服务贸易和数字化交付服务分口径展示，再由 AI 辅助解释。</Text></View>
+    <View className="min-h-screen bg-background px-4 py-4 md:px-8 md:py-8">
+      <View className="mx-auto max-w-[1180px]">
+        <View className="bg-slate-900 rounded-[30px] p-5 md:p-7 mb-5 relative overflow-hidden"><View className="absolute -right-12 -top-16 h-44 w-44 rounded-full bg-emerald-400/10" /><View className="relative"><View className="flex flex-row items-center justify-between"><View><Text className="text-xs text-emerald-300 font-black tracking-[2px]">AI TRADE / DASHBOARD</Text><Text className="text-2xl md:text-3xl text-white font-black block mt-2">数字贸易数据看板</Text></View><SourceBadge tone="snapshot">课堂展示版</SourceBadge></View><Text className="text-sm text-slate-300 leading-relaxed mt-3 max-w-[720px]">将跨境电商货物贸易、服务贸易和数字化交付服务分口径展示，再由 AI 辅助解释，最后落到商品与市场行动。</Text><View className="flex flex-row flex-wrap gap-2 mt-4"><View className="rounded-full bg-white/10 px-3 py-1.5"><Text className="text-xs text-slate-200">数据覆盖 {TRADE_DATA_SNAPSHOT[0]?.year}—{Math.max(...TRADE_DATA_SNAPSHOT.map((item) => item.year))}</Text></View><View className="rounded-full bg-emerald-400/15 px-3 py-1.5"><Text className="text-xs text-emerald-200">已核对官方指标 {summary.officialCount} 项</Text></View><View className="rounded-full bg-amber-400/15 px-3 py-1.5"><Text className="text-xs text-amber-200">结论需人工复核</Text></View></View></View></View>
 
-      <View className="grid grid-cols-2 gap-3 mb-4">
+      <View className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <View className="bg-card rounded-2xl p-4 border border-border border-opacity-10"><Text className="text-2xl text-primary font-black block">2.84</Text><Text className="text-xs text-muted-foreground">2025中国跨境电商（万亿元）</Text><Text className="text-xs text-emerald-700 font-bold mt-1">同比 +4.8%</Text></View>
         <View className="bg-card rounded-2xl p-4 border border-border border-opacity-10"><Text className="text-2xl text-teal-700 font-black block">4323.1</Text><Text className="text-xs text-muted-foreground">可数字化交付服务（亿美元）</Text><Text className="text-xs text-emerald-700 font-bold mt-1">同比 +6.3%</Text></View>
         <View className="bg-card rounded-2xl p-4 border border-border border-opacity-10"><Text className="text-2xl text-amber-700 font-black block">{summary.digitalCagr || '--'}%</Text><Text className="text-xs text-muted-foreground">2020—2025信息服务年均增速</Text></View>
         <View className="bg-card rounded-2xl p-4 border border-border border-opacity-10"><Text className="text-2xl text-foreground font-black block">{usageStats.marketAnalyses}</Text><Text className="text-xs text-muted-foreground">本账号市场分析记录</Text></View>
       </View>
+
+      <View className="bg-card rounded-[28px] p-4 md:p-5 border border-border border-opacity-10 mb-4"><View className="flex flex-row items-center justify-between mb-3"><View><Text className="text-lg text-foreground font-bold block">本页先给出三个判断</Text><Text className="text-xs text-muted-foreground mt-1">把统计事实转换成课堂展示可复述的观点</Text></View><View className="i-mdi-lightbulb-on-outline text-primary text-2xl" /></View><View className="grid md:grid-cols-3 gap-2"><View className="rounded-2xl bg-primary/5 border border-primary/10 p-3"><Text className="text-xs text-primary font-black">01 / 规模</Text><Text className="text-sm text-foreground font-bold block mt-1">跨境电商货物规模继续增长</Text><Text className="text-xs text-muted-foreground leading-relaxed block mt-1">说明出海基础环境存在，但不能直接等同于根书商品销量。</Text></View><View className="rounded-2xl bg-teal-50 border border-teal-100 p-3"><Text className="text-xs text-teal-700 font-black">02 / 环境</Text><Text className="text-sm text-foreground font-bold block mt-1">数字化交付服务环境增强</Text><Text className="text-xs text-muted-foreground leading-relaxed block mt-1">适合用内容、社交媒体和数字化沟通降低跨境触达成本。</Text></View><View className="rounded-2xl bg-amber-50 border border-amber-100 p-3"><Text className="text-xs text-amber-700 font-black">03 / 方法</Text><Text className="text-sm text-foreground font-bold block mt-1">先小批量验证，再扩大投入</Text><Text className="text-xs text-muted-foreground leading-relaxed block mt-1">用询盘、转化、履约和合规结果修正 AI 的机会评分。</Text></View></View></View>
 
       <View className="bg-card rounded-[28px] p-4 border border-border border-opacity-10 mb-4"><View className="flex flex-row items-center justify-between"><View><Text className="text-lg text-foreground font-bold block">跨境电商规模趋势</Text><Text className="text-xs text-muted-foreground mt-1">中国 · 货物贸易口径 · 万亿元</Text></View><SourceBadge>海关/新华社</SourceBadge></View><DashboardChart canvasId="trade-ecommerce-trend" option={ecommerceOption} height="240px" /><Text className="text-xs text-muted-foreground leading-relaxed">AI解释：2024—2025规模继续增长，但这里只能说明跨境电商货物贸易规模，不能直接推导根书文创的销量。</Text></View>
 
@@ -123,6 +126,7 @@ export default function AiTradeDashboard() {
 
       <View className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-6"><Text className="text-xs text-amber-800 leading-relaxed">{AI_DISCLAIMER.chart} 数据来源、单位、年份和口径必须与图表一起展示；当前页面使用已审核快照，未接入实时抓取。</Text></View>
       <View className="rounded-xl bg-primary flex items-center justify-center py-3 mb-6" onClick={() => Taro.navigateTo({url: '/pages/ai-trade-market/index'})}><Text className="text-sm text-primary-foreground font-bold">进入市场分析工作台</Text></View>
+      </View>
     </View>
   )
 }
