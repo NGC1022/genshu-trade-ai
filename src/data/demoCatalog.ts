@@ -1,4 +1,4 @@
-import type {SKU} from '@/db/types'
+import type {SKU, TicketType} from '@/db/types'
 
 // 数据库尚未连接或商品表为空时使用的课堂/预览目录。
 // 商品字段与 supabase 的 sku 表保持一致，数据库恢复后会自动优先使用线上数据。
@@ -106,6 +106,56 @@ export const DEMO_CATALOG: SKU[] = [
     material: '天然树根与手工书法',
     origin: '中国',
     lead_time: '15—30个工作日',
+    created_at: createdAt,
+    updated_at: createdAt
+  }
+]
+
+export const DEMO_TICKET_TYPES: TicketType[] = [
+  {
+    id: 'demo-ticket-adult',
+    name: '根书文创园成人票',
+    description: '参观根书文创园及核心展陈空间，适合首次到访游客。',
+    price: 80,
+    original_price: 98,
+    validity_days: 30,
+    usage_notes: '凭购票二维码与有效证件入园。',
+    image_url: PRODUCT_IMAGES[4],
+    stock_available: 999,
+    stock_reserved: 0,
+    stock_sold: 128,
+    is_active: true,
+    created_at: createdAt,
+    updated_at: createdAt
+  },
+  {
+    id: 'demo-ticket-combo',
+    name: '根书文创园文化联票',
+    description: '包含园区参观与专题讲解服务，适合家庭和文化考察。',
+    price: 88,
+    original_price: 108,
+    validity_days: 30,
+    usage_notes: '讲解场次需提前预约，具体以订单页面为准。',
+    image_url: PRODUCT_IMAGES[0],
+    stock_available: 999,
+    stock_reserved: 0,
+    stock_sold: 96,
+    is_active: true,
+    created_at: createdAt,
+    updated_at: createdAt
+  },
+  {
+    id: 'demo-ticket-guide',
+    name: '专题讲解服务',
+    description: '由文化讲解员带领了解根书文化、园区建筑与文创设计。',
+    price: 20,
+    validity_days: 30,
+    usage_notes: '需与入园票同时使用。',
+    image_url: PRODUCT_IMAGES[2],
+    stock_available: 999,
+    stock_reserved: 0,
+    stock_sold: 54,
+    is_active: true,
     created_at: createdAt,
     updated_at: createdAt
   }

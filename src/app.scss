@@ -311,42 +311,49 @@ html[data-preview='mobile'] .preview-products-page .product-grid {
 html[data-preview='desktop'] .taro-tabbar__tabbar {
   position: fixed !important;
   top: 0 !important;
-  bottom: auto !important;
+  bottom: 0 !important;
   left: 0 !important;
-  right: 0 !important;
-  width: 100% !important;
-  max-width: none !important;
-  height: 72px !important;
+  right: auto !important;
+  width: 220px !important;
+  max-width: 220px !important;
+  height: 100vh !important;
   z-index: 1000;
   background: rgba(255, 255, 255, 0.96) !important;
-  border-bottom: 1px solid hsl(var(--border)) !important;
+  border-right: 1px solid hsl(var(--border)) !important;
   box-shadow: 0 4px 18px rgba(82, 11, 15, 0.08);
 }
 
 html[data-preview='desktop'] .taro-tabbar__container {
-  padding-top: 72px;
+  padding-top: 0;
+  padding-left: 220px;
   box-sizing: border-box;
 }
 
 html[data-preview='desktop'] .taro-tabbar__panel {
-  padding-top: 72px;
+  padding-top: 0;
+  padding-left: 220px;
   box-sizing: border-box;
 }
 
 html[data-preview='desktop'] .taro-tabbar__tabbar .weui-tabbar {
-  height: 72px;
-  max-width: 1180px;
+  height: 100vh;
+  max-width: 220px;
   margin-inline: auto;
   display: flex;
+  flex-direction: column;
   align-items: stretch;
-  justify-content: flex-start;
+  justify-content: center;
   background: transparent;
+  padding: 24px 12px;
+  box-sizing: border-box;
 }
 
 html[data-preview='desktop'] .taro-tabbar__tabbar .weui-tabbar__item {
-  flex: 0 0 132px;
-  height: 72px;
-  padding: 12px 18px 8px;
+  flex: 0 0 64px;
+  width: 100%;
+  height: 64px;
+  padding: 12px 18px;
+  margin: 4px 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -374,6 +381,12 @@ html[data-preview='desktop'] .taro-tabbar__tabbar .weui-tabbar__label {
   white-space: nowrap;
 }
 
+html[data-preview='desktop'] .taro_page > taro-view-core:first-child,
+html[data-preview='desktop'] .taro_page > taro-scroll-view-core:first-child {
+  width: min(100%, 1180px);
+  margin-inline: auto;
+}
+
 html[data-preview='desktop'] .preview-home-page .home-hero {
   height: 300px;
 }
@@ -386,6 +399,10 @@ html[data-preview='desktop'] .preview-home-page .home-featured-banner {
 html[data-preview='desktop'] .preview-home-page .home-featured-banner .text-2xl {
   font-size: 2rem;
   line-height: 1.25;
+}
+
+html[data-preview='desktop'] .preview-home-page .home-other-apps-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 html[data-preview='desktop'] .taro_page .text-xs {

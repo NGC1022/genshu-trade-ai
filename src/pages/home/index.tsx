@@ -56,13 +56,13 @@ export default function Home() {
   ]
 
   const loadData = useCallback(async () => {
-    const {data: products} = await getSKUList()
+    const [{data: products}, {data: ticketData}, {data: announcementData}] = await Promise.all([
+      getSKUList(),
+      getTicketTypeList(),
+      getParkAnnouncements()
+    ])
     setFeaturedProducts((products.length > 0 ? products : DEMO_CATALOG).slice(0, 4))
-
-    const {data: ticketData} = await getTicketTypeList()
     setTickets(ticketData)
-
-    const {data: announcementData} = await getParkAnnouncements()
     setAnnouncements(announcementData.slice(0, 3))
   }, [])
 
@@ -367,7 +367,7 @@ export default function Home() {
               <View className="w-1 h-5 bg-secondary rounded-full mr-2 shadow-sm" />
               <Text className="text-xl font-bold text-accent tracking-wide">{t('more')}</Text>
             </View>
-            <View className="grid grid-cols-2 gap-4">
+            <View className="grid grid-cols-2 gap-4 home-other-apps-grid">
               {otherApps.map((app, index) => (
                 <View
                   key={index}

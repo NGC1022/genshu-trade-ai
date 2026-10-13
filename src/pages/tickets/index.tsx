@@ -1,11 +1,12 @@
 import {Image, ScrollView, Text, View} from '@tarojs/components'
 import Taro, {useDidShow} from '@tarojs/taro'
 import {useCallback, useState} from 'react'
+import {DEMO_TICKET_TYPES} from '@/data/demoCatalog'
 import {getTicketTypeList} from '@/db/api'
 import type {TicketType} from '@/db/types'
 
 export default function Tickets() {
-  const [tickets, setTickets] = useState<TicketType[]>([])
+  const [tickets, setTickets] = useState<TicketType[]>(DEMO_TICKET_TYPES)
 
   const loadData = useCallback(async () => {
     const {data} = await getTicketTypeList()

@@ -53,6 +53,7 @@ export default function Login() {
             'pages/home/index',
             'pages/products/index',
             'pages/customization/index',
+            'pages/notes/index',
             'pages/profile/index'
           ]
           const isTabBar = tabBarPages.some((page) => redirectPath.includes(page))
@@ -96,6 +97,7 @@ export default function Login() {
             'pages/home/index',
             'pages/products/index',
             'pages/customization/index',
+            'pages/notes/index',
             'pages/profile/index'
           ]
           const isTabBar = tabBarPages.some((page) => redirectPath.includes(page))
@@ -188,6 +190,13 @@ export default function Login() {
               loading={loading}>
               微信快捷登录
             </Button>
+          </View>
+
+          <View className="mt-4 rounded-lg bg-muted/60 px-3 py-2">
+            <Text className="block text-xs text-muted-foreground leading-relaxed">
+              H5 预览账号：demo / demo123
+              {'\n'}管理员演示账号：admin / admin123
+            </Text>
           </View>
         </View>
       </View>

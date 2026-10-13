@@ -1,7 +1,7 @@
 import type {User} from '@supabase/supabase-js'
 import Taro from '@tarojs/taro'
 import {createContext, type ReactNode, useContext, useEffect, useState} from 'react'
-import {supabase} from '@/client/supabase'
+import {isSupabaseConfigured, supabase} from '@/client/supabase'
 
 export interface Profile {
   [key: string]: unknown
@@ -32,6 +32,31 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const DEMO_SESSION_KEY = 'genshu-demo-session'
+const DEMO_ACCOUNTS: Record<string, {password: string; role: 'user' | 'admin'}> = {
+  demo: {password: 'demo123', role: 'user'},
+  admin: {password: 'admin123', role: 'admin'}
+}
+
+function createDemoUser(username: string) {
+  const account = DEMO_ACCOUNTS[username] || {password: '', role: 'user' as const}
+  return {
+    id: `demo-${username}`,
+    aud: 'authenticated',
+    role: 'authenticated',
+    email: `${username}@demo.genshu.local`,
+    app_metadata: {},
+    user_metadata: {username},
+    identities: [],
+    created_at: new Date(0).toISOString(),
+    updated_at: new Date().toISOString(),
+    confirmation_sent_at: undefined,
+    email_confirmed_at: new Date(0).toISOString(),
+    phone: undefined,
+    last_sign_in_at: new Date().toISOString(),
+    user_role: account.role
+  } as unknown as User
+}
 
 export function AuthProvider({children}: {children: ReactNode}) {
   const [user, setUser] = useState<User | null>(null)
@@ -49,6 +74,16 @@ export function AuthProvider({children}: {children: ReactNode}) {
   }
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      const demoUsername = Taro.getStorageSync(DEMO_SESSION_KEY)
+      if (demoUsername) {
+        setUser(createDemoUser(demoUsername))
+        setProfile({username: demoUsername, role: DEMO_ACCOUNTS[demoUsername]?.role || 'user', is_demo: true})
+      }
+      setLoading(false)
+      return
+    }
+
     supabase.auth
       .getSession()
       .then(({data: {session}}) => {
@@ -81,6 +116,17 @@ export function AuthProvider({children}: {children: ReactNode}) {
   }, [])
 
   const signInWithUsername = async (username: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      const account = DEMO_ACCOUNTS[username]
+      if (!account || account.password !== password) {
+        return {error: new Error('预览模式账号或密码错误。可使用 demo / demo123，管理员使用 admin / admin123')}
+      }
+      Taro.setStorageSync(DEMO_SESSION_KEY, username)
+      setUser(createDemoUser(username))
+      setProfile({username, role: account.role, is_demo: true})
+      return {error: null}
+    }
+
     try {
       const email = `${username}@miaoda.com`
       const {error} = await supabase.auth.signInWithPassword({
@@ -96,6 +142,14 @@ export function AuthProvider({children}: {children: ReactNode}) {
   }
 
   const signUpWithUsername = async (username: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      if (!username || password.length < 6) return {error: new Error('预览模式密码至少需要 6 位')}
+      Taro.setStorageSync(DEMO_SESSION_KEY, username)
+      setUser(createDemoUser(username))
+      setProfile({username, role: 'user', is_demo: true})
+      return {error: null}
+    }
+
     try {
       const email = `${username}@miaoda.com`
       const {error} = await supabase.auth.signUp({
@@ -156,6 +210,10 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
   const signInWithWechat = async () => {
     try {
+      if (!isSupabaseConfigured) {
+        throw new Error('网页版预览请使用 demo / demo123 登录；微信快捷登录需在正式小程序环境配置后端')
+      }
+
       // Check if running in WeChat Mini Program environment
       if (Taro.getEnv() !== Taro.ENV_TYPE.WEAPP) {
         throw new Error('仅支持微信小程序登录，网页端请使用用户名密码登录')
@@ -188,7 +246,8 @@ export function AuthProvider({children}: {children: ReactNode}) {
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    if (isSupabaseConfigured) await supabase.auth.signOut()
+    Taro.removeStorageSync(DEMO_SESSION_KEY)
     setUser(null)
     setProfile(null)
   }

@@ -1,5 +1,5 @@
 import {supabase} from '@/client/supabase'
-import {DEMO_CATALOG, getDemoSKU} from '@/data/demoCatalog'
+import {DEMO_CATALOG, DEMO_TICKET_TYPES, getDemoSKU} from '@/data/demoCatalog'
 import type {
   Address,
   AfterSaleInput,
@@ -139,12 +139,16 @@ export async function getTicketTypeList() {
     .select('*')
     .eq('is_active', true)
     .order('created_at', {ascending: false})
-  return {data: (Array.isArray(data) ? data : []) as TicketType[], error}
+  const onlineData = (Array.isArray(data) ? data : []) as TicketType[]
+  return {data: onlineData.length > 0 ? onlineData : DEMO_TICKET_TYPES, error: onlineData.length > 0 ? error : null}
 }
 
 export async function getTicketTypeDetail(id: string) {
   const {data, error} = await supabase.from('ticket_types').select('*').eq('id', id).eq('is_active', true).maybeSingle()
-  return {data: data as TicketType | null, error}
+  return {
+    data: (data as TicketType | null) || DEMO_TICKET_TYPES.find((ticket) => ticket.id === id) || null,
+    error: data ? error : null
+  }
 }
 
 // ==================== 地址相关 ====================

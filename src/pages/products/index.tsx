@@ -1,6 +1,7 @@
 import {Image, Input, Text, View} from '@tarojs/components'
 import Taro, {useDidShow} from '@tarojs/taro'
 import {useCallback, useMemo, useState} from 'react'
+import {DEMO_CATALOG} from '@/data/demoCatalog'
 import {getSKUList} from '@/db/api'
 import type {SKU} from '@/db/types'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
@@ -19,7 +20,8 @@ const monthlySales = (product: SKU) => Number(product.monthly_sold ?? Math.round
 const totalSales = (product: SKU) => Number(product.stock_sold || 0)
 
 export default function Products() {
-  const [allProducts, setAllProducts] = useState<SKU[]>([])
+  // 先渲染本地目录，避免远端数据库为空、未授权或网络较慢时出现整页空白。
+  const [allProducts, setAllProducts] = useState<SKU[]>(DEMO_CATALOG)
   const [category, setCategory] = useState<string>('')
   const [keyword, setKeyword] = useState('')
   const [sortMode, setSortMode] = useState<SortMode>('featured')

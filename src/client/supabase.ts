@@ -7,9 +7,22 @@ import Taro, {showToast} from '@tarojs/taro'
 const supabaseUrl: string = process.env.TARO_APP_SUPABASE_URL || 'https://preview-placeholder.supabase.co'
 const supabaseAnonKey: string = process.env.TARO_APP_SUPABASE_ANON_KEY || 'preview-placeholder-anon-key'
 const appId: string = process.env.TARO_APP_APP_ID || 'genshu-trade-ai-preview'
+export const isSupabaseConfigured =
+  !supabaseUrl.includes('preview-placeholder') && !supabaseAnonKey.includes('preview-placeholder')
 
 let noticed = false
 export const customFetch: typeof fetch = async (url: string, options: RequestInit) => {
+  // H5 预览没有 Supabase 密钥时不再尝试访问占位地址，所有业务 API 会立即使用本地演示回退数据。
+  if (!isSupabaseConfigured) {
+    return {
+      ok: false,
+      status: 503,
+      json: async () => ({error: 'SUPABASE_NOT_CONFIGURED'}),
+      text: async () => 'SUPABASE_NOT_CONFIGURED',
+      headers: {get: () => null}
+    } as unknown as Response
+  }
+
   let headers: HeadersInit = options.headers || {}
   const {method = 'GET', body} = options
 
@@ -22,7 +35,8 @@ export const customFetch: typeof fetch = async (url: string, options: RequestIni
     method: method as keyof Taro.request.Method,
     header: headers,
     data: body,
-    responseType: 'text'
+    responseType: 'text',
+    timeout: 8000
   })
 
   // 全局启停提示

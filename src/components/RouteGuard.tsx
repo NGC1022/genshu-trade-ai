@@ -1,4 +1,3 @@
-import type {TabBarItem} from '@tarojs/taro'
 import Taro, {useDidShow} from '@tarojs/taro'
 import {useCallback, useEffect, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
@@ -19,17 +18,6 @@ const LOGIN_PAGE_PATH = '/pages/login/index'
 // Storage key for saving redirect path after login
 export const STORAGE_KEY_REDIRECT_PATH = 'loginRedirectPath'
 
-function getTabBarPages(): string[] {
-  const app = Taro.getApp()
-  const tabBarList = app?.config?.tabBar?.list || []
-  return tabBarList.map((item: TabBarItem) => `/${item.pagePath}`)
-}
-
-function isTabBarPage(path: string): boolean {
-  const tabBarPages = getTabBarPages()
-  return tabBarPages.some((tabBarPath) => path?.includes(tabBarPath))
-}
-
 // Throttled navigation to prevent duplicate redirects
 let isNavigating = false
 function navigateToLogin(currentPath: string): void {
@@ -41,8 +29,8 @@ function navigateToLogin(currentPath: string): void {
 
   // Save current path for redirect after login
   Taro.setStorageSync(STORAGE_KEY_REDIRECT_PATH, currentPath)
-  const navigateMethod = isTabBarPage(currentPath) ? Taro.navigateTo : Taro.redirectTo
-  navigateMethod({url: LOGIN_PAGE_PATH})
+  // 登录页不是 TabBar 页面，统一使用 redirectTo，避免从 TabBar 页调用错误导航方式。
+  Taro.redirectTo({url: LOGIN_PAGE_PATH})
 
   // Reset flag after 100ms
   setTimeout(() => {
