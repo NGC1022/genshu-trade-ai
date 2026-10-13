@@ -1,19 +1,36 @@
 import {Button, Image, ScrollView, Text, View} from '@tarojs/components'
 import Taro, {useRouter} from '@tarojs/taro'
 import {useCallback, useEffect, useState} from 'react'
+import {DEMO_TICKET_TYPES} from '@/data/demoCatalog'
 import {getTicketTypeDetail} from '@/db/api'
 import type {TicketType} from '@/db/types'
 
 export default function TicketDetail() {
   const router = useRouter()
   const {id} = router.params
-  const [ticket, setTicket] = useState<TicketType | null>(null)
+  const [ticket, setTicket] = useState<TicketType | null>(
+    () => DEMO_TICKET_TYPES.find((item) => item.id === id) || null
+  )
+  const [loadError, setLoadError] = useState(false)
   const [_quantity, _setQuantity] = useState(1)
 
   const loadTicket = useCallback(async () => {
-    const {data} = await getTicketTypeDetail(id!)
-    if (data) {
-      setTicket(data)
+    if (!id) {
+      setLoadError(true)
+      return
+    }
+    const fallback = DEMO_TICKET_TYPES.find((item) => item.id === id) || null
+    if (fallback) setTicket(fallback)
+
+    try {
+      const result = await Promise.race([
+        getTicketTypeDetail(id),
+        new Promise<{data: null}>((resolve) => setTimeout(() => resolve({data: null}), 1500))
+      ])
+      if (result.data) setTicket(result.data)
+      else if (!fallback) setLoadError(true)
+    } catch {
+      if (!fallback) setLoadError(true)
     }
   }, [id])
 
@@ -28,10 +45,22 @@ export default function TicketDetail() {
     Taro.navigateTo({url: `/pages/ticket-pricing/index?id=${ticket.id}`})
   }
 
-  if (!ticket) {
+  if (!ticket && !loadError) {
     return (
       <View className="min-h-screen bg-gradient-subtle flex items-center justify-center">
         <Text className="text-muted-foreground">加载中...</Text>
+      </View>
+    )
+  }
+
+  if (!ticket && loadError) {
+    return (
+      <View className="min-h-screen bg-gradient-subtle flex flex-col items-center justify-center px-6">
+        <Text className="text-lg font-bold text-foreground mb-2">暂时找不到该门票</Text>
+        <Text className="text-sm text-muted-foreground text-center mb-4">请返回门票列表后重新选择票种。</Text>
+        <Button className="bg-primary text-white rounded-full px-6 py-2" onClick={() => Taro.navigateBack()}>
+          返回门票列表
+        </Button>
       </View>
     )
   }

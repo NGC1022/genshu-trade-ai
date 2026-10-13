@@ -33,8 +33,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 const DEMO_SESSION_KEY = 'genshu-demo-session'
-const DEMO_ACCOUNTS: Record<string, {password: string; role: 'user' | 'admin'}> = {
+const DEMO_ACCOUNTS: Record<string, {password: string; role: 'user' | 'merchant' | 'admin'}> = {
   demo: {password: 'demo123', role: 'user'},
+  merchant: {password: 'merchant123', role: 'merchant'},
   admin: {password: 'admin123', role: 'admin'}
 }
 
@@ -43,10 +44,10 @@ function createDemoUser(username: string) {
   return {
     id: `demo-${username}`,
     aud: 'authenticated',
-    role: 'authenticated',
+    role: account.role,
     email: `${username}@demo.genshu.local`,
     app_metadata: {},
-    user_metadata: {username},
+    user_metadata: {username, role: account.role},
     identities: [],
     created_at: new Date(0).toISOString(),
     updated_at: new Date().toISOString(),

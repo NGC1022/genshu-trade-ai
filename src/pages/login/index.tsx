@@ -195,6 +195,7 @@ export default function Login() {
           <View className="mt-4 rounded-lg bg-muted/60 px-3 py-2">
             <Text className="block text-xs text-muted-foreground leading-relaxed">
               H5 预览账号：demo / demo123
+              {'\n'}商家演示账号：merchant / merchant123
               {'\n'}管理员演示账号：admin / admin123
             </Text>
           </View>
