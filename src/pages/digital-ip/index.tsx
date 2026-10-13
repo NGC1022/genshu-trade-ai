@@ -1,19 +1,17 @@
 import {Image, ScrollView, Text, View} from '@tarojs/components'
 import Taro, {useDidShow} from '@tarojs/taro'
 import {useCallback, useState} from 'react'
-import {getDigitalIPList} from '@/db/api'
+import {DEMO_DIGITAL_IPS, getDigitalIPList} from '@/db/api'
 import type {DigitalIP} from '@/db/types'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 
 export default function DigitalIPPage() {
-  const [ips, setIps] = useState<DigitalIP[]>([])
-  const [loading, setLoading] = useState(true)
+  const [ips, setIps] = useState<DigitalIP[]>(DEMO_DIGITAL_IPS)
+  const [loading, _setLoading] = useState(false)
 
   const loadData = useCallback(async () => {
-    setLoading(true)
     const {data} = await getDigitalIPList()
     setIps(data)
-    setLoading(false)
   }, [])
 
   useDidShow(() => {

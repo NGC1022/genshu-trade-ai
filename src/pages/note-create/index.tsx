@@ -239,8 +239,8 @@ export default function NoteCreate() {
       Taro.showToast({title: '请先登录', icon: 'none'})
       return
     }
-    if (!title.trim() || !content.trim()) {
-      Taro.showToast({title: '请填写标题和内容', icon: 'none'})
+    if (!content.trim()) {
+      Taro.showToast({title: '请填写笔记内容', icon: 'none'})
       return
     }
 
@@ -258,7 +258,7 @@ export default function NoteCreate() {
     setLoading(true)
     const {error} = await createNote({
       user_id: user.id,
-      title,
+      title: title.trim() || '根书文化随笔',
       content,
       images,
       cover_image: images.length > 0 ? images[coverIndex] : undefined,

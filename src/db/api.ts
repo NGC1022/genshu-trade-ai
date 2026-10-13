@@ -62,6 +62,62 @@ import type {
 
 const BUCKET_NAME = 'app-9dlnarhqk45d_images'
 const LOCAL_ADDRESS_KEY = 'genshu-demo-addresses'
+const LOCAL_NOTES_KEY = 'genshu-demo-notes'
+const LOCAL_DRAFTS_KEY = 'genshu-demo-drafts'
+const LOCAL_AI_RECORDS_KEY = 'genshu-demo-ai-records'
+
+export const DEMO_DIGITAL_IPS: DigitalIP[] = [
+  {
+    id: 'demo-digital-ip-genbao',
+    name: '根宝',
+    concept: '一笔一画，连接传统根艺与数字时代',
+    highlights: '根宝以根书艺术为灵感，代表自然、坚韧与持续生长。',
+    background_story:
+      '根宝诞生于一块被时间打磨的树根，沿着书法的线条认识世界，把传统文化转译成当代年轻人愿意分享的数字内容。',
+    role_setting: '文化探索者、文创设计师、根书故事讲述者。',
+    image_url: DEMO_CATALOG[3].image_url,
+    comic_strip: [DEMO_CATALOG[0].image_url || '', DEMO_CATALOG[2].image_url || ''],
+    is_active: true,
+    created_at: '2026-01-01T00:00:00.000Z'
+  }
+]
+
+const DEMO_NOTES: Note[] = [
+  {
+    id: 'demo-note-root-culture',
+    user_id: 'demo-user',
+    title: '把根书带到日常生活里',
+    content:
+      '一枚木质书签、一块自然根纹，也可以成为认识中国文化的入口。我们正在尝试把传统根书艺术转化为适合跨境礼赠和社交分享的文创产品。',
+    images: [DEMO_CATALOG[2].image_url || ''],
+    topics: ['根书文化', '文创设计', '数字贸易'],
+    cover_image: DEMO_CATALOG[2].image_url,
+    recommended_products: ['SKU-BOOK-001'],
+    likes_count: 128,
+    comments_count: 18,
+    view_count: 860,
+    is_deleted: false,
+    created_at: '2026-10-10T09:00:00.000Z',
+    author: {username: '根书文化编辑部'}
+  },
+  {
+    id: 'demo-note-market-insight',
+    user_id: 'demo-user',
+    title: '海外消费者为什么喜欢有故事的礼物？',
+    content:
+      '从商品本身到文化叙事，海外市场更在意礼物背后的来源、材料和使用场景。根书文创的下一步，是用清晰的数字内容让每一件作品都能被理解、被分享。',
+    images: [DEMO_CATALOG[3].image_url || ''],
+    topics: ['海外市场', '文化礼赠'],
+    cover_image: DEMO_CATALOG[3].image_url,
+    recommended_products: ['SKU-BADGE-001'],
+    likes_count: 96,
+    comments_count: 11,
+    view_count: 620,
+    is_deleted: false,
+    created_at: '2026-10-08T09:00:00.000Z',
+    author: {username: '根书文化编辑部'}
+  }
+]
 
 function getLocalAddresses(userId: string): Address[] {
   const all = Taro.getStorageSync(LOCAL_ADDRESS_KEY)
@@ -72,6 +128,15 @@ function saveLocalAddresses(userId: string, addresses: Address[]) {
   const all = Taro.getStorageSync(LOCAL_ADDRESS_KEY)
   const otherUsers = Array.isArray(all) ? all.filter((address) => address.user_id !== userId) : []
   Taro.setStorageSync(LOCAL_ADDRESS_KEY, [...otherUsers, ...addresses])
+}
+
+function readLocalList<T>(key: string): T[] {
+  const value = Taro.getStorageSync(key)
+  return Array.isArray(value) ? value : []
+}
+
+function writeLocalList<T>(key: string, value: T[]) {
+  Taro.setStorageSync(key, value)
 }
 
 function createLocalAddress(address: Omit<Address, 'id' | 'created_at' | 'updated_at'>) {
@@ -351,12 +416,16 @@ export async function getDigitalIPList() {
     .select('*')
     .eq('is_active', true)
     .order('created_at', {ascending: false})
-  return {data: (Array.isArray(data) ? data : []) as DigitalIP[], error}
+  const onlineData = (Array.isArray(data) ? data : []) as DigitalIP[]
+  return {data: onlineData.length > 0 ? onlineData : DEMO_DIGITAL_IPS, error: onlineData.length > 0 ? error : null}
 }
 
 export async function getDigitalIPDetail(id: string) {
   const {data, error} = await supabase.from('digital_ips').select('*').eq('id', id).eq('is_active', true).maybeSingle()
-  return {data: data as DigitalIP | null, error}
+  return {
+    data: (data as DigitalIP | null) || DEMO_DIGITAL_IPS.find((item) => item.id === id) || null,
+    error: data ? error : null
+  }
 }
 
 // ==================== 会员与优惠券相关 ====================
@@ -855,7 +924,21 @@ export async function getNotes(
   }
 
   const {data, error} = await query
-  return {data: (data || []) as Note[], error}
+  if (Array.isArray(data) && data.length > 0 && !error) return {data: data as Note[], error: null}
+
+  let localNotes = [...readLocalList<Note>(LOCAL_NOTES_KEY), ...DEMO_NOTES]
+  if (options.userId)
+    localNotes = localNotes.filter((note) => note.user_id === options.userId || note.user_id === 'demo-user')
+  if (options.topic) localNotes = localNotes.filter((note) => note.topics.includes(options.topic as string))
+  if (options.keyword) {
+    const keyword = options.keyword.toLowerCase()
+    localNotes = localNotes.filter((note) => `${note.title}${note.content}`.toLowerCase().includes(keyword))
+  }
+  if (options.sortBy === 'hottest') localNotes.sort((a, b) => b.likes_count - a.likes_count)
+  else localNotes.sort((a, b) => b.created_at.localeCompare(a.created_at))
+  const start = options.offset || 0
+  const end = start + (options.limit || localNotes.length)
+  return {data: localNotes.slice(start, end), error: null}
 }
 
 export async function getNoteDetail(id: string) {
@@ -865,11 +948,37 @@ export async function getNoteDetail(id: string) {
     .eq('id', id)
     .eq('is_deleted', false)
     .maybeSingle()
-  return {data: data as Note | null, error}
+  if (data && !error) return {data: data as Note, error: null}
+  return {
+    data: [...readLocalList<Note>(LOCAL_NOTES_KEY), ...DEMO_NOTES].find((note) => note.id === id) || null,
+    error: null
+  }
 }
 
 export async function createNote(note: Partial<Note>) {
   const result = await supabase.from('notes').insert(note).select().maybeSingle()
+
+  if (result.error || !result.data) {
+    const localNote: Note = {
+      id: `demo-note-${Date.now()}`,
+      user_id: note.user_id || 'demo-user',
+      title: note.title || '根书文化新笔记',
+      content: note.content || '',
+      images: note.images || [],
+      topics: note.topics || [],
+      cover_image: note.cover_image,
+      location: note.location,
+      recommended_products: note.recommended_products,
+      likes_count: 0,
+      comments_count: 0,
+      view_count: 0,
+      is_deleted: false,
+      created_at: new Date().toISOString(),
+      author: {username: '演示用户'}
+    }
+    writeLocalList(LOCAL_NOTES_KEY, [localNote, ...readLocalList<Note>(LOCAL_NOTES_KEY)])
+    return {data: localNote, error: null}
+  }
 
   // 如果创建成功，通知所有关注者
   if (result.data && note.user_id) {
@@ -1399,17 +1508,23 @@ export async function getDrafts(userId: string) {
     .select('*')
     .eq('user_id', userId)
     .order('updated_at', {ascending: false})
-  return {data: (data || []) as NoteDraft[], error}
+  if (!error) return {data: (data || []) as NoteDraft[], error: null}
+  return {data: readLocalList<NoteDraft>(LOCAL_DRAFTS_KEY).filter((draft) => draft.user_id === userId), error: null}
 }
 
 export async function getDraftDetail(id: string) {
   const {data, error} = await supabase.from('note_drafts').select('*').eq('id', id).maybeSingle()
-  return {data: data as NoteDraft | null, error}
+  if (data && !error) return {data: data as NoteDraft, error: null}
+  return {data: readLocalList<NoteDraft>(LOCAL_DRAFTS_KEY).find((draft) => draft.id === id) || null, error: null}
 }
 
 export async function createDraft(draft: Omit<NoteDraft, 'id' | 'created_at' | 'updated_at'>) {
   const {data, error} = await supabase.from('note_drafts').insert(draft).select().maybeSingle()
-  return {data: data as NoteDraft | null, error}
+  if (data && !error) return {data: data as NoteDraft, error: null}
+  const now = new Date().toISOString()
+  const localDraft: NoteDraft = {...draft, id: `demo-draft-${Date.now()}`, created_at: now, updated_at: now}
+  writeLocalList(LOCAL_DRAFTS_KEY, [localDraft, ...readLocalList<NoteDraft>(LOCAL_DRAFTS_KEY)])
+  return {data: localDraft, error: null}
 }
 
 export async function updateDraft(id: string, updates: Partial<NoteDraft>) {
@@ -1419,11 +1534,27 @@ export async function updateDraft(id: string, updates: Partial<NoteDraft>) {
     .eq('id', id)
     .select()
     .maybeSingle()
-  return {data: data as NoteDraft | null, error}
+  if (data && !error) return {data: data as NoteDraft, error: null}
+  const drafts = readLocalList<NoteDraft>(LOCAL_DRAFTS_KEY)
+  const existing = drafts.find((draft) => draft.id === id)
+  if (!existing) return {data: null, error: new Error('草稿不存在')}
+  const updated = {...existing, ...updates, updated_at: new Date().toISOString()}
+  writeLocalList(
+    LOCAL_DRAFTS_KEY,
+    drafts.map((draft) => (draft.id === id ? updated : draft))
+  )
+  return {data: updated, error: null}
 }
 
 export async function deleteDraft(id: string) {
   const {error} = await supabase.from('note_drafts').delete().eq('id', id)
+  if (error) {
+    writeLocalList(
+      LOCAL_DRAFTS_KEY,
+      readLocalList<NoteDraft>(LOCAL_DRAFTS_KEY).filter((draft) => draft.id !== id)
+    )
+    return {error: null}
+  }
   return {error}
 }
 
@@ -1683,7 +1814,10 @@ export async function getAiTradeRecords(userId: string, type?: string) {
     query = query.eq('type', type)
   }
   const {data, error} = await query
-  return {data: (Array.isArray(data) ? data : []) as AiTradeRecord[], error}
+  if (!error) return {data: (Array.isArray(data) ? data : []) as AiTradeRecord[], error: null}
+  let localRecords = readLocalList<AiTradeRecord>(LOCAL_AI_RECORDS_KEY).filter((record) => record.user_id === userId)
+  if (type) localRecords = localRecords.filter((record) => record.type === type)
+  return {data: localRecords, error: null}
 }
 
 // 查询单条AI业务记录详情
@@ -1695,7 +1829,23 @@ export async function getAiTradeRecordById(id: string) {
 // 保存AI业务记录
 export async function createAiTradeRecord(record: AiTradeRecordInput) {
   const {data, error} = await supabase.from('ai_trade_records').insert(record).select().single()
-  return {data: data as AiTradeRecord | null, error}
+  if (data && !error) return {data: data as AiTradeRecord, error: null}
+  const now = new Date().toISOString()
+  const localRecord: AiTradeRecord = {
+    ...record,
+    id: `demo-ai-record-${Date.now()}`,
+    user_id: record.user_id || 'demo-user',
+    input_data: record.input_data || {},
+    ai_result: record.ai_result || {},
+    status: record.status || 'draft',
+    review_status: record.review_status || 'pending',
+    source: record.source || 'mock',
+    is_demo: record.is_demo ?? true,
+    created_at: now,
+    updated_at: now
+  }
+  writeLocalList(LOCAL_AI_RECORDS_KEY, [localRecord, ...readLocalList<AiTradeRecord>(LOCAL_AI_RECORDS_KEY)])
+  return {data: localRecord, error: null}
 }
 
 // 更新AI业务记录（人工确认/审核状态等）

@@ -1,5 +1,5 @@
 import {Button, Image, Picker, ScrollView, Text, View} from '@tarojs/components'
-import Taro, {useRouter} from '@tarojs/taro'
+import Taro, {useDidShow, useRouter} from '@tarojs/taro'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {supabase} from '@/client/supabase'
 import DemoBadge from '@/components/DemoBadge'
@@ -246,14 +246,14 @@ export default function OrderConfirm() {
     })
   }
 
-  // 监听地址选择返回
-  useEffect(() => {
+  // 每次从地址列表返回时重新读取选择结果
+  useDidShow(() => {
     const pages = Taro.getCurrentPages()
     const currPage = pages[pages.length - 1]
     if ((currPage as any).data?.selectedAddress) {
       setSelectedAddress((currPage as any).data.selectedAddress)
     }
-  }, [])
+  })
 
   const openLocation = (location: any) => {
     Taro.openLocation({
