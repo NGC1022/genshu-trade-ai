@@ -242,16 +242,16 @@ export default function OrderConfirm() {
 
   const selectAddress = () => {
     Taro.navigateTo({
-      url: '/pages/address-list/index?select=true'
+      url: '/pages/address-list/index?select=true&target=order'
     })
   }
 
   // 每次从地址列表返回时重新读取选择结果
   useDidShow(() => {
-    const pages = Taro.getCurrentPages()
-    const currPage = pages[pages.length - 1]
-    if ((currPage as any).data?.selectedAddress) {
-      setSelectedAddress((currPage as any).data.selectedAddress)
+    const pendingAddress = Taro.getStorageSync('pendingSelectedAddress:order') as Address | undefined
+    if (pendingAddress) {
+      setSelectedAddress(pendingAddress)
+      Taro.removeStorageSync('pendingSelectedAddress:order')
     }
   })
 

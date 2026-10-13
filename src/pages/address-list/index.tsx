@@ -8,7 +8,7 @@ import type {Address} from '@/db/types'
 export default function AddressList() {
   const router = useRouter()
   const {user} = useAuth()
-  const {select} = router.params
+  const {select, target} = router.params
   const [addresses, setAddresses] = useState<Address[]>([])
   const [activeId, setActiveId] = useState<string>('') // 当前展开操作项（滑动操作反馈）
 
@@ -24,11 +24,7 @@ export default function AddressList() {
 
   const handleSelect = (address: Address) => {
     if (select === 'true') {
-      const pages = Taro.getCurrentPages()
-      const prevPage = pages[pages.length - 2]
-      if (prevPage) {
-        prevPage.setData({selectedAddress: address})
-      }
+      if (target) Taro.setStorageSync(`pendingSelectedAddress:${target}`, address)
       Taro.navigateBack()
     }
   }
@@ -139,6 +135,20 @@ export default function AddressList() {
                         : `${address.province} ${address.city} ${address.district} ${address.detail}`}
                     </Text>
                   </View>
+
+                  {select === 'true' ? (
+                    <View className="flex justify-end mt-4">
+                      <View
+                        className="flex flex-row items-center justify-center bg-primary text-white rounded-full px-5 py-2 active:opacity-80"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSelect(address)
+                        }}>
+                        <View className="i-mdi-check text-base mr-1" />
+                        <Text className="text-sm text-white font-bold">选用此地址</Text>
+                      </View>
+                    </View>
+                  ) : null}
 
                   {/* 滑动展开的操作区（操作反馈） */}
                   {isExpanded && select !== 'true' ? (

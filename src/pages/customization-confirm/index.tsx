@@ -19,13 +19,11 @@ export default function CustomizationConfirm() {
   }, [router.params])
 
   useDidShow(async () => {
-    // 优先获取上个页面设置的地址
-    const pages = Taro.getCurrentPages()
-    const currentPage = pages[pages.length - 1] as any
-    if (currentPage.data?.selectedAddress) {
-      setSelectedAddress(currentPage.data.selectedAddress)
-      // 清理数据，避免重复触发
-      currentPage.setData({selectedAddress: null})
+    // 优先读取地址列表写入的选择结果，避免依赖页面实例 setData 与 React 状态同步
+    const pendingAddress = Taro.getStorageSync('pendingSelectedAddress:customization')
+    if (pendingAddress) {
+      setSelectedAddress(pendingAddress)
+      Taro.removeStorageSync('pendingSelectedAddress:customization')
     } else if (!selectedAddress && user) {
       // 首次加载，获取默认地址
       const {data} = await getDefaultAddress(user.id)
@@ -36,7 +34,7 @@ export default function CustomizationConfirm() {
   })
 
   const selectAddress = () => {
-    Taro.navigateTo({url: '/pages/address-list/index?select=true'})
+    Taro.navigateTo({url: '/pages/address-list/index?select=true&target=customization'})
   }
 
   const handleSubmit = async () => {
