@@ -1,6 +1,6 @@
 const pages = [
-  'pages/splash/index',
   'pages/home/index',
+  'pages/splash/index',
   'pages/products/index',
   'pages/customization/index',
   'pages/profile/index',

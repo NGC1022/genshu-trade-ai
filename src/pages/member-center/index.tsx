@@ -1,6 +1,6 @@
 import {Image, ScrollView, Text, View} from '@tarojs/components'
 import Taro, {useDidShow} from '@tarojs/taro'
-import {useCallback, useState} from 'react'
+import {useCallback, useRef, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {
   claimCoupon,
@@ -20,21 +20,31 @@ export default function MemberCenter() {
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [userCoupons, setUserCoupons] = useState<UserCoupon[]>([])
   const [loading, setLoading] = useState(true)
+  const loadedUserId = useRef<string | null>(null)
 
   const loadData = useCallback(async () => {
-    if (!user) return
-    setLoading(true)
-    const [pRes, cRes, couponRes, uCouponRes] = await Promise.all([
-      getProfile(user.id),
-      getExclusiveContentList(),
-      getAvailableCoupons(),
-      getUserCoupons(user.id)
-    ])
-    setProfile(pRes.data)
-    setContents(cRes.data)
-    setCoupons(couponRes.data)
-    setUserCoupons(uCouponRes.data)
-    setLoading(false)
+    if (!user) {
+      setLoading(false)
+      return
+    }
+    if (loadedUserId.current !== user.id) setLoading(true)
+    try {
+      const [pRes, cRes, couponRes, uCouponRes] = await Promise.all([
+        getProfile(user.id),
+        getExclusiveContentList(),
+        getAvailableCoupons(),
+        getUserCoupons(user.id)
+      ])
+      setProfile(pRes.data)
+      setContents(cRes.data)
+      setCoupons(couponRes.data)
+      setUserCoupons(uCouponRes.data)
+      loadedUserId.current = user.id
+    } catch {
+      Taro.showToast({title: '部分会员信息暂时无法加载', icon: 'none'})
+    } finally {
+      setLoading(false)
+    }
   }, [user])
 
   useDidShow(() => {
@@ -219,7 +229,12 @@ export default function MemberCenter() {
                   key={item.id}
                   className="bg-card rounded-3xl overflow-hidden shadow-card border border-border border-opacity-10 active:opacity-90 transition-opacity"
                   onClick={() => Taro.navigateTo({url: `/pages/exclusive-content/index?id=${item.id}`})}>
-                  <Image src={item.cover_image || DEFAULT_PRODUCT_IMAGE} className="w-full h-48" mode="aspectFill" />
+                  <Image
+                    src={item.cover_image || DEFAULT_PRODUCT_IMAGE}
+                    className="w-full h-48"
+                    mode="aspectFill"
+                    lazyLoad
+                  />
                   <View className="p-6">
                     <View className="bg-primary/10 self-start px-2 py-0.5 rounded mb-3">
                       <Text className="text-xs text-primary font-black uppercase tracking-widest">{item.category}</Text>

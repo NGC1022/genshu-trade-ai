@@ -34,7 +34,7 @@ export default function Tickets() {
             key={ticket.id}
             className="bg-card rounded-xl overflow-hidden mb-4 shadow-card"
             onClick={() => navigateToDetail(ticket.id)}>
-            {ticket.image_url && <Image src={ticket.image_url} className="w-full h-48" mode="aspectFill" />}
+            {ticket.image_url && <Image src={ticket.image_url} className="w-full h-48" mode="aspectFill" lazyLoad />}
             <View className="p-4">
               <View className="flex items-start justify-between mb-2">
                 <Text className="text-lg font-bold text-foreground flex-1">{ticket.name}</Text>

@@ -21,11 +21,11 @@ export default function Home() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
 
   const bannerImages = [
-    'https://miaoda-site-img.cdn.bcebos.com/images/baidu_image_search_56bef55f-8db0-4be0-ae82-b856e5c27013.jpg',
-    'https://miaoda-site-img.cdn.bcebos.com/images/baidu_image_search_d4b942e4-8cd2-4422-9d32-8840e287a1d0.jpg',
-    'https://miaoda-site-img.cdn.bcebos.com/images/baidu_image_search_9d0dcb15-739e-4d60-854d-3f1e168ba65f.jpg',
-    'https://miaoda-site-img.cdn.bcebos.com/images/baidu_image_search_ba4ba8b8-f8b6-46d2-a44d-18b2b5f319ec.jpg',
-    'https://miaoda-site-img.cdn.bcebos.com/images/baidu_image_search_2a8d03a4-978b-4d76-a5bc-38afffb68702.jpg'
+    '/static/images/banners/banner-1.jpg',
+    '/static/images/banners/banner-2.jpg',
+    '/static/images/banners/banner-3.jpg',
+    '/static/images/banners/banner-4.jpg',
+    '/static/images/banners/banner-5.jpg'
   ]
 
   const otherApps = [
@@ -57,9 +57,9 @@ export default function Home() {
 
   const loadData = useCallback(async () => {
     const [{data: products}, {data: ticketData}, {data: announcementData}] = await Promise.all([
-      getSKUList(),
-      getTicketTypeList(),
-      getParkAnnouncements()
+      getSKUList(undefined, 4),
+      getTicketTypeList(3),
+      getParkAnnouncements(3)
     ])
     setFeaturedProducts((products.length > 0 ? products : DEMO_CATALOG).slice(0, 4))
     setTickets(ticketData)
@@ -152,7 +152,7 @@ export default function Home() {
           {bannerImages.map((src, index) => (
             <SwiperItem key={index}>
               <View className="relative w-full h-full overflow-hidden">
-                <Image src={src} className="w-full h-full" mode="aspectFill" />
+                <Image src={src} className="w-full h-full" mode="aspectFill" lazyLoad={index > 0} />
                 {index === bannerImages.length - 1 && (
                   <View className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center p-6 text-center">
                     <View className="bg-white bg-opacity-10 backdrop-blur-sm p-4 rounded-xl border border-white border-opacity-30">
@@ -283,12 +283,17 @@ export default function Home() {
             </View>
 
             <View className="grid grid-cols-2 gap-4 home-product-grid">
-              {featuredProducts.map((product) => (
+              {featuredProducts.map((product, index) => (
                 <View
                   key={product.id}
                   className="bg-card overflow-hidden shadow-card border border-border border-opacity-10 rounded-3xl active:scale-[0.98] transition-all"
                   onClick={() => navigateToProductDetail(product.sku_code)}>
-                  <Image src={product.image_url || DEFAULT_PRODUCT_IMAGE} className="w-full h-44" mode="aspectFill" />
+                  <Image
+                    src={product.image_url || DEFAULT_PRODUCT_IMAGE}
+                    className="w-full h-44"
+                    mode="aspectFill"
+                    lazyLoad={index > 1}
+                  />
                   <View className="p-4">
                     <Text className="text-base font-bold text-foreground mb-1.5 line-clamp-1">{product.name}</Text>
                     <View className="flex items-center justify-between">

@@ -139,6 +139,7 @@ export default function Products() {
                     src={product.image_url || DEFAULT_PRODUCT_IMAGE}
                     className="w-full h-40 md:h-52"
                     mode="aspectFill"
+                    lazyLoad
                   />
                   <View className="absolute top-2 left-2 rounded-full bg-black/65 px-2 py-1">
                     <Text className="text-[10px] text-white font-bold">

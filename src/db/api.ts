@@ -169,27 +169,31 @@ export async function updateOpenid(userId: string, openid: string) {
 
 // ==================== 公告相关 ====================
 
-export async function getParkAnnouncements() {
-  const {data, error} = await supabase
+export async function getParkAnnouncements(limit?: number) {
+  let query = supabase
     .from('park_announcements')
     .select('*')
     .eq('is_active', true)
     .order('priority', {ascending: false})
     .order('created_at', {ascending: false})
+  if (limit) query = query.limit(limit)
+  const {data, error} = await query
 
   return {data: (Array.isArray(data) ? data : []) as any[], error}
 }
 
 // ==================== 商品相关 ====================
 
-export async function getSKUList(category?: string) {
+export async function getSKUList(category?: string, limit?: number) {
   let query = supabase.from('sku').select('*').eq('is_active', true).order('created_at', {ascending: false})
   if (category) {
     query = query.eq('category', category)
   }
+  if (limit) query = query.limit(limit)
   const {data, error} = await query
   const onlineData = (Array.isArray(data) ? data : []) as SKU[]
-  const fallbackData = category ? DEMO_CATALOG.filter((item) => item.category === category) : DEMO_CATALOG
+  const allFallbackData = category ? DEMO_CATALOG.filter((item) => item.category === category) : DEMO_CATALOG
+  const fallbackData = limit ? allFallbackData.slice(0, limit) : allFallbackData
   return {data: onlineData.length > 0 ? onlineData : fallbackData, error: onlineData.length > 0 ? error : null}
 }
 
@@ -223,14 +227,13 @@ export async function getPickupLocations() {
 
 // ==================== 门票相关 ====================
 
-export async function getTicketTypeList() {
-  const {data, error} = await supabase
-    .from('ticket_types')
-    .select('*')
-    .eq('is_active', true)
-    .order('created_at', {ascending: false})
+export async function getTicketTypeList(limit?: number) {
+  let query = supabase.from('ticket_types').select('*').eq('is_active', true).order('created_at', {ascending: false})
+  if (limit) query = query.limit(limit)
+  const {data, error} = await query
   const onlineData = (Array.isArray(data) ? data : []) as TicketType[]
-  return {data: onlineData.length > 0 ? onlineData : DEMO_TICKET_TYPES, error: onlineData.length > 0 ? error : null}
+  const fallbackData = limit ? DEMO_TICKET_TYPES.slice(0, limit) : DEMO_TICKET_TYPES
+  return {data: onlineData.length > 0 ? onlineData : fallbackData, error: onlineData.length > 0 ? error : null}
 }
 
 export async function getTicketTypeDetail(id: string) {
@@ -1699,6 +1702,7 @@ export async function getProductReviews(skuId: string) {
     .select('*, author:profiles!user_id(username, avatar_url)')
     .eq('sku_id', skuId)
     .order('created_at', {ascending: false})
+    .limit(3)
   return {data: (data || []) as ProductReview[], error}
 }
 
@@ -1752,18 +1756,18 @@ export async function toggleReviewLike(reviewId: string, userId: string, isLiked
 }
 
 export async function checkUserPurchased(userId: string, skuId: string) {
-  // 检查是否有包含该SKU且状态为 'completed' 的订单
+  // 用 JSONB containment 在数据库端判断 SKU，避免下载用户的全部已完成订单。
   const {data, error} = await supabase
     .from('orders')
-    .select('id, items')
+    .select('id')
     .eq('user_id', userId)
     .eq('status', 'completed')
+    .contains('items', [{sku_snapshot: {id: skuId}}])
+    .limit(1)
+    .maybeSingle()
 
   if (error) return {data: false, error}
-
-  const purchased = (data || []).some((order) => (order.items as any[]).some((item) => item.sku_snapshot?.id === skuId))
-
-  return {data: purchased, error: null}
+  return {data: Boolean(data), error: null}
 }
 
 // ==================== 系统报错相关 ====================

@@ -183,12 +183,10 @@ export default function OrderConfirm() {
 
   const loadData = useCallback(async () => {
     if (!user) return
-    const {data: address} = await getDefaultAddress(user.id)
+    const [{data: address}, {data: locations}] = await Promise.all([getDefaultAddress(user.id), getPickupLocations()])
     if (address) {
       setSelectedAddress(address)
     }
-
-    const {data: locations} = await getPickupLocations()
     if (locations?.length) setPickupLocations(locations)
   }, [user])
 

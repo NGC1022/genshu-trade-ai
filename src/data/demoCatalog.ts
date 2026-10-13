@@ -3,11 +3,11 @@ import type {SKU, TicketType} from '@/db/types'
 // 数据库尚未连接或商品表为空时使用的课堂/预览目录。
 // 商品字段与 supabase 的 sku 表保持一致，数据库恢复后会自动优先使用线上数据。
 const PRODUCT_IMAGES = [
-  'https://miaoda-site-img.cdn.bcebos.com/images/baidu_image_search_56bef55f-8db0-4be0-ae82-b856e5c27013.jpg',
-  'https://miaoda-site-img.cdn.bcebos.com/images/baidu_image_search_d4b942e4-8cd2-4422-9d32-8840e287a1d0.jpg',
-  'https://miaoda-site-img.cdn.bcebos.com/images/baidu_image_search_9d0dcb15-739e-4d60-854d-3f1e168ba65f.jpg',
-  'https://miaoda-site-img.cdn.bcebos.com/images/baidu_image_search_ba4ba8b8-f8b6-46d2-a44d-18b2b5f319ec.jpg',
-  'https://miaoda-site-img.cdn.bcebos.com/images/baidu_image_search_2a8d03a4-978b-4d76-a5bc-38afffb68702.jpg'
+  '/static/images/banners/banner-1.jpg',
+  '/static/images/banners/banner-2.jpg',
+  '/static/images/banners/banner-3.jpg',
+  '/static/images/banners/banner-4.jpg',
+  '/static/images/banners/banner-5.jpg'
 ]
 
 const createdAt = '2026-01-01T00:00:00.000Z'

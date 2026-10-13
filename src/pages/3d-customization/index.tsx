@@ -87,7 +87,7 @@ export default function ThreeDCustomization() {
                   onClick={() => setSelectedTemplate(template.id)}>
                   <View className="w-full h-32 rounded-xl mb-3 overflow-hidden shadow-sm">
                     {template.image_url ? (
-                      <Image src={template.image_url} className="w-full h-full" mode="aspectFill" />
+                      <Image src={template.image_url} className="w-full h-full" mode="aspectFill" lazyLoad />
                     ) : (
                       <View className="w-full h-full bg-muted flex items-center justify-center">
                         <View className="i-mdi-cube-outline text-4xl text-muted-foreground" />

@@ -1,12 +1,13 @@
 import {Image, Input, ScrollView, Text, View} from '@tarojs/components'
 import Taro, {useDidShow, useRouter} from '@tarojs/taro'
-import {useCallback, useEffect, useState} from 'react'
+import {useCallback, useEffect, useRef, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {getNotes, searchUsers} from '@/db/api'
 import type {Note, Profile} from '@/db/types'
 import {DEFAULT_AVATAR} from '@/utils/images'
 
 const SEARCH_HISTORY_KEY = 'search_history'
+const NOTE_PAGE_SIZE = 20
 
 export default function Notes() {
   const router = useRouter()
@@ -21,6 +22,11 @@ export default function Notes() {
   const [searchMode, setSearchMode] = useState<'notes' | 'users'>('notes')
   const [sortBy, setSortBy] = useState<'latest' | 'hottest' | 'following'>('latest')
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [appliedKeyword, setAppliedKeyword] = useState('')
+  const requestVersionRef = useRef(0)
+  const loadingMoreRef = useRef(false)
 
   // 加载搜索历史
   useEffect(() => {
@@ -30,28 +36,41 @@ export default function Notes() {
 
   const loadData = useCallback(
     async (key = '', topic = '', sort: 'latest' | 'hottest' | 'following' = 'latest', mode?: 'notes' | 'users') => {
+      const requestVersion = ++requestVersionRef.current
       setLoading(true)
+      loadingMoreRef.current = false
+      setLoadingMore(false)
       const targetMode = mode || searchMode
-      if (targetMode === 'notes') {
-        const {data} = await getNotes({
-          keyword: key,
-          topic: topic || undefined,
-          sortBy: sort,
-          followerId: sort === 'following' ? user?.id : undefined
-        })
-        setNotes(data)
-        setUsers([])
-      } else {
-        if (key.trim()) {
-          const {data} = await searchUsers(key)
-          setUsers(data)
-        } else {
+      try {
+        if (targetMode === 'notes') {
+          const {data} = await getNotes({
+            keyword: key,
+            topic: topic || undefined,
+            sortBy: sort,
+            followerId: sort === 'following' ? user?.id : undefined,
+            limit: NOTE_PAGE_SIZE,
+            offset: 0
+          })
+          if (requestVersion !== requestVersionRef.current) return
+          setAppliedKeyword(key)
+          setNotes(data)
+          setHasMore(data.length === NOTE_PAGE_SIZE)
           setUsers([])
+        } else {
+          const data = key.trim() ? (await searchUsers(key)).data : []
+          if (requestVersion !== requestVersionRef.current) return
+          setUsers(data)
+          setNotes([])
+          setHasMore(false)
         }
-        setNotes([])
+        setCurrentTopic(topic)
+      } catch {
+        if (requestVersion === requestVersionRef.current) {
+          Taro.showToast({title: '内容加载失败，请重试', icon: 'none'})
+        }
+      } finally {
+        if (requestVersion === requestVersionRef.current) setLoading(false)
       }
-      setCurrentTopic(topic)
-      setLoading(false)
     },
     [searchMode, user?.id]
   )
@@ -69,12 +88,40 @@ export default function Notes() {
     loadData(keyword, decodedTopic || currentTopic, sortBy, searchMode)
   })
 
+  const loadMore = useCallback(async () => {
+    if (searchMode !== 'notes' || loading || !hasMore || loadingMoreRef.current) return
+    loadingMoreRef.current = true
+    setLoadingMore(true)
+    const requestVersion = requestVersionRef.current
+    try {
+      const {data} = await getNotes({
+        keyword: appliedKeyword,
+        topic: currentTopic || undefined,
+        sortBy,
+        followerId: sortBy === 'following' ? user?.id : undefined,
+        limit: NOTE_PAGE_SIZE,
+        offset: notes.length
+      })
+      if (requestVersion !== requestVersionRef.current) return
+      setNotes((previous) => {
+        const existingIds = new Set(previous.map((note) => note.id))
+        return [...previous, ...data.filter((note) => !existingIds.has(note.id))]
+      })
+      setHasMore(data.length === NOTE_PAGE_SIZE)
+    } catch {
+      Taro.showToast({title: '加载更多失败，请稍后重试', icon: 'none'})
+    } finally {
+      loadingMoreRef.current = false
+      setLoadingMore(false)
+    }
+  }, [appliedKeyword, currentTopic, hasMore, loading, notes.length, searchMode, sortBy, user?.id])
+
   const handleClearFilter = () => {
     setCurrentTopic('')
     setKeyword('')
     setSearchMode('notes')
     setSortBy('latest')
-    loadData('', '', 'latest')
+    loadData('', '', 'latest', 'notes')
   }
 
   const saveSearchHistory = (key: string) => {
@@ -132,7 +179,7 @@ export default function Notes() {
     setSearchMode(mode)
     setCurrentTopic('')
     setSortBy('latest')
-    loadData(keyword, '', 'latest')
+    loadData(keyword, '', 'latest', mode)
   }
 
   const handleSortChange = (sort: 'latest' | 'hottest' | 'following') => {
@@ -293,7 +340,7 @@ export default function Notes() {
         )}
       </View>
 
-      <ScrollView className="flex-1" scrollY>
+      <ScrollView className="flex-1" scrollY onScrollToLower={loadMore}>
         {/* 用户搜索结果 */}
         {searchMode === 'users' && (
           <View className="px-4 py-4">
@@ -366,6 +413,17 @@ export default function Notes() {
           </View>
         )}
 
+        {searchMode === 'notes' && loadingMore && (
+          <View className="py-4 flex items-center justify-center">
+            <Text className="text-sm text-slate-400">正在加载更多…</Text>
+          </View>
+        )}
+        {searchMode === 'notes' && !hasMore && notes.length > 0 && (
+          <View className="py-4 flex items-center justify-center">
+            <Text className="text-sm text-slate-400">已经到底了</Text>
+          </View>
+        )}
+
         {notes.length === 0 && !loading && searchMode === 'notes' && (
           <View className="flex flex-col items-center justify-center py-20">
             <View className="i-mdi-note-text-outline text-6xl text-slate-200 mb-4" />
@@ -392,7 +450,7 @@ function NoteCard({note, onClick, onUserClick}: {note: Note; onClick: () => void
     <View className="bg-white rounded-xl overflow-hidden shadow-sm active:opacity-90" onClick={onClick}>
       {coverImage ? (
         <View className="w-full aspect-[3/4] bg-slate-100 overflow-hidden">
-          <Image src={coverImage} className="w-full h-full" mode="aspectFill" />
+          <Image src={coverImage} className="w-full h-full" mode="aspectFill" lazyLoad />
         </View>
       ) : (
         <View className="w-full aspect-[3/4] bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex flex-col justify-center">
@@ -412,6 +470,7 @@ function NoteCard({note, onClick, onUserClick}: {note: Note; onClick: () => void
             <Image
               src={note.author?.avatar_url || DEFAULT_AVATAR}
               className="w-5 h-5 rounded-full mr-1.5 bg-slate-100"
+              lazyLoad
             />
             <Text className="text-sm text-slate-500 truncate flex-1">{note.author?.username || '用户'}</Text>
           </View>

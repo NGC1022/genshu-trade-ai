@@ -1,3 +1,4 @@
+import {readdir, readFile} from 'node:fs/promises'
 import path from 'node:path'
 import {defineConfig, type UserConfigExport} from '@tarojs/cli'
 
@@ -11,6 +12,22 @@ import prodConfig from './prod'
 
 const base = String(process.argv[process.argv.length - 1])
 const publicPath = /^http/.test(base) ? base : '/'
+
+const staticBannerAssetsPlugin: Plugin = {
+  name: 'emit-static-banner-assets',
+  apply: 'build',
+  async buildStart() {
+    const sourceDir = path.resolve(__dirname, '../src/static/images/banners')
+    for (const filename of await readdir(sourceDir)) {
+      if (!filename.endsWith('.jpg')) continue
+      this.emitFile({
+        type: 'asset',
+        fileName: `static/images/banners/${filename}`,
+        source: await readFile(path.join(sourceDir, filename))
+      })
+    }
+  }
+}
 
 // https://taro-docs.jd.com/docs/next/config#defineconfig-辅助函数
 export default defineConfig<'vite'>(async (merge) => {
@@ -41,6 +58,7 @@ export default defineConfig<'vite'>(async (merge) => {
     compiler: {
       type: 'vite',
       vitePlugins: [
+        staticBannerAssetsPlugin,
         {
           // 通过 vite 插件加载 postcss,
           name: 'postcss-config-loader-plugin',
