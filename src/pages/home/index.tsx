@@ -1,11 +1,11 @@
 import {Image, ScrollView, Swiper, SwiperItem, Text, View} from '@tarojs/components'
 import Taro, {useDidShow} from '@tarojs/taro'
 import {useCallback, useState} from 'react'
+import {DEMO_CATALOG} from '@/data/demoCatalog'
 import {getParkAnnouncements, getSKUList, getTicketTypeList} from '@/db/api'
 import type {SKU, TicketType} from '@/db/types'
 import {t} from '@/utils/i18n'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
-import {DEMO_CATALOG} from '@/data/demoCatalog'
 
 interface Announcement {
   id: string
@@ -263,7 +263,7 @@ export default function Home() {
 
             {/* 根宝IP新品推荐 */}
             <View
-              className="bg-gradient-primary rounded-[32px] p-6 mb-6 shadow-elegant relative overflow-hidden active:scale-[0.98] transition-all"
+              className="bg-gradient-primary rounded-[32px] p-6 mb-6 shadow-elegant relative overflow-hidden active:scale-[0.98] transition-all home-featured-banner"
               onClick={navigateToProducts}>
               <View className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
               <View className="flex flex-row items-center justify-between relative z-10">
@@ -304,7 +304,6 @@ export default function Home() {
               ))}
             </View>
           </View>
-
 
           {/* 新增看板 - 数字IP专区 */}
           <View

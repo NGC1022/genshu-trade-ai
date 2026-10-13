@@ -25,7 +25,8 @@
       "@/*": [
         "src/*"
       ]
-    }
+    },
+    "skipLibCheck": true
   },
   "include": [
     "./src",

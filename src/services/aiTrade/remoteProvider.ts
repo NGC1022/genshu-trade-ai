@@ -1,8 +1,8 @@
 import {supabase} from '@/client/supabase'
-import {getTradeDataSnapshot} from './tradeData'
-import {PROMPT_MARKET_ANALYSIS} from './prompts'
 import {mockProvider} from './mockProvider'
+import {PROMPT_MARKET_ANALYSIS} from './prompts'
 import type {AiTradeProvider} from './provider'
+import {getTradeDataSnapshot} from './tradeData'
 import type {MarketAnalysisResult, ProductIntlInput} from './types'
 
 interface ChatResponse {
@@ -52,7 +52,19 @@ async function callRemoteMarketAnalysis(input: ProductIntlInput, markets: string
     product: input,
     markets,
     verified_data: evidence,
-    output_shape: {results: markets.map((market) => ({market, consumer_profile: '', consumption_scenario: '', cultural_fit: '', price_fit: '', marketing_focus: [], potential_risks: [], data_to_verify: [], analysis_summary: ''}))}
+    output_shape: {
+      results: markets.map((market) => ({
+        market,
+        consumer_profile: '',
+        consumption_scenario: '',
+        cultural_fit: '',
+        price_fit: '',
+        marketing_focus: [],
+        potential_risks: [],
+        data_to_verify: [],
+        analysis_summary: ''
+      }))
+    }
   })
   const {data, error} = await supabase.functions.invoke('minimax-chat', {
     body: {

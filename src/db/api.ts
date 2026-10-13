@@ -1,4 +1,5 @@
 import {supabase} from '@/client/supabase'
+import {DEMO_CATALOG, getDemoSKU} from '@/data/demoCatalog'
 import type {
   Address,
   AfterSaleInput,
@@ -57,7 +58,6 @@ import type {
   UserCoupon,
   UserDailyQuizStats
 } from './types'
-import {DEMO_CATALOG, getDemoSKU} from '@/data/demoCatalog'
 
 const BUCKET_NAME = 'app-9dlnarhqk45d_images'
 

@@ -231,35 +231,77 @@ export function calculateYoY(current: number, previous: number): number | null {
 
 export function calculateCagr(start: number, end: number, years: number): number | null {
   if (!start || years <= 0) return null
-  return Number(((Math.pow(end / start, 1 / years) - 1) * 100).toFixed(1))
+  return Number((((end / start) ** (1 / years) - 1) * 100).toFixed(1))
 }
 
 export function getSnapshotSummary() {
   const snapshot = activeTradeDataSnapshot
   const ecommerce = snapshot.filter((item) => item.indicator === '跨境电商进出口规模').sort((a, b) => a.year - b.year)
-  const digital = snapshot.filter((item) => item.indicator === '电信、计算机和信息服务进出口' || item.indicator === '数字化交付服务出口').sort((a, b) => a.year - b.year)
+  const digital = snapshot
+    .filter((item) => item.indicator === '电信、计算机和信息服务进出口' || item.indicator === '数字化交付服务出口')
+    .sort((a, b) => a.year - b.year)
   const latestEcommerce = ecommerce[ecommerce.length - 1]
   const latestDigital = digital[digital.length - 1]
   return {
     ecommerce,
     digital,
-    ecommerceYoY: ecommerce.length >= 2 ? calculateYoY(latestEcommerce.value, ecommerce[ecommerce.length - 2].value) : null,
-    digitalCagr: digital.length >= 2 ? calculateCagr(digital[0].value, latestDigital.value, latestDigital.year - digital[0].year) : null,
+    ecommerceYoY:
+      ecommerce.length >= 2 ? calculateYoY(latestEcommerce.value, ecommerce[ecommerce.length - 2].value) : null,
+    digitalCagr:
+      digital.length >= 2
+        ? calculateCagr(digital[0].value, latestDigital.value, latestDigital.year - digital[0].year)
+        : null,
     officialCount: snapshot.filter((item) => item.status === 'official').length
   }
 }
 
 export function scoreMarkets(): MarketScoreBreakdown[] {
   const base: Record<string, Omit<MarketScoreBreakdown, 'market' | 'total' | 'status'>> = {
-    美国: {scale: 88, growth: 72, digitalRelevance: 82, culturalFit: 68, feasibility: 64, rationale: '规模与数字化环境较强，但合规、履约和竞争信息需要在商品层面继续核验。'},
-    日本: {scale: 69, growth: 66, digitalRelevance: 76, culturalFit: 86, feasibility: 74, rationale: '文化内容适配度较好，适合先验证小批量文创和内容传播。'},
-    新加坡: {scale: 46, growth: 78, digitalRelevance: 88, culturalFit: 70, feasibility: 80, rationale: '数字服务环境和履约条件较好，但不能仅用数字服务规模推断商品销量。'},
-    韩国: {scale: 63, growth: 73, digitalRelevance: 79, culturalFit: 78, feasibility: 68, rationale: '内容消费活跃，仍需补充品类竞争、渠道成本和合规数据。'}
+    美国: {
+      scale: 88,
+      growth: 72,
+      digitalRelevance: 82,
+      culturalFit: 68,
+      feasibility: 64,
+      rationale: '规模与数字化环境较强，但合规、履约和竞争信息需要在商品层面继续核验。'
+    },
+    日本: {
+      scale: 69,
+      growth: 66,
+      digitalRelevance: 76,
+      culturalFit: 86,
+      feasibility: 74,
+      rationale: '文化内容适配度较好，适合先验证小批量文创和内容传播。'
+    },
+    新加坡: {
+      scale: 46,
+      growth: 78,
+      digitalRelevance: 88,
+      culturalFit: 70,
+      feasibility: 80,
+      rationale: '数字服务环境和履约条件较好，但不能仅用数字服务规模推断商品销量。'
+    },
+    韩国: {
+      scale: 63,
+      growth: 73,
+      digitalRelevance: 79,
+      culturalFit: 78,
+      feasibility: 68,
+      rationale: '内容消费活跃，仍需补充品类竞争、渠道成本和合规数据。'
+    }
   }
-  return Object.entries(base).map(([market, item]) => ({
-    market,
-    ...item,
-    total: Math.round(item.scale * 0.3 + item.growth * 0.25 + item.digitalRelevance * 0.2 + item.culturalFit * 0.15 + item.feasibility * 0.1),
-    status: 'ai_inference' as const
-  })).sort((a, b) => b.total - a.total)
+  return Object.entries(base)
+    .map(([market, item]) => ({
+      market,
+      ...item,
+      total: Math.round(
+        item.scale * 0.3 +
+          item.growth * 0.25 +
+          item.digitalRelevance * 0.2 +
+          item.culturalFit * 0.15 +
+          item.feasibility * 0.1
+      ),
+      status: 'ai_inference' as const
+    }))
+    .sort((a, b) => b.total - a.total)
 }

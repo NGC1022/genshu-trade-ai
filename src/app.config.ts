@@ -75,6 +75,7 @@ const pages = [
   'pages/after-sales/index',
   'pages/order-exceptions/index',
   'pages/merchant-admin/index',
+  'pages/merchant-config/index',
   'pages/sku-management/index',
   'pages/merchant-products/index',
   'pages/merchant-orders/index'

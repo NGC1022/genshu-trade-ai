@@ -83,11 +83,11 @@ export default function Messages() {
         return
       }
       if (message.related_inquiry_id) {
-        Taro.navigateTo({url: `/pages/ai-trade-inquiry-detail/index?id=${message.related_inquiry_id}`})
+        Taro.navigateTo({url: `/pages/ai-trade-inquiry/index?inquiryId=${message.related_inquiry_id}`})
         return
       }
       if (message.related_quote_id) {
-        Taro.navigateTo({url: `/pages/ai-trade-quote-detail/index?id=${message.related_quote_id}`})
+        Taro.navigateTo({url: `/pages/ai-trade-quote-workbench/index?quoteId=${message.related_quote_id}`})
         return
       }
       if (message.related_after_sale_id) {

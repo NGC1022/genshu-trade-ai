@@ -224,7 +224,7 @@ export default function TicketConfirm() {
         const success = await requestWechatPay(data.order_no, openid, 'ticket')
         if (!success) {
           // 支付失败，跳转到我的订单页面（门票订单通常不保留待支付状态太久，或者门票订单详情页支持重付）
-          Taro.redirectTo({url: '/pages/ticket-orders/index'})
+          Taro.redirectTo({url: '/pages/my-tickets/index'})
           return
         }
       }

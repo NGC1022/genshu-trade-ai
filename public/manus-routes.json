@@ -1,0 +1,256 @@
+{
+  "routes": [
+    {
+      "path": "/splash/index"
+    },
+    {
+      "path": "/home/index"
+    },
+    {
+      "path": "/products/index"
+    },
+    {
+      "path": "/customization/index"
+    },
+    {
+      "path": "/profile/index"
+    },
+    {
+      "path": "/login/index"
+    },
+    {
+      "path": "/product-detail/index"
+    },
+    {
+      "path": "/order-confirm/index"
+    },
+    {
+      "path": "/order-list/index"
+    },
+    {
+      "path": "/order-detail/index"
+    },
+    {
+      "path": "/tickets/index"
+    },
+    {
+      "path": "/ticket-detail/index"
+    },
+    {
+      "path": "/ticket-pricing/index"
+    },
+    {
+      "path": "/ticket-confirm/index"
+    },
+    {
+      "path": "/ticket-success/index"
+    },
+    {
+      "path": "/my-tickets/index"
+    },
+    {
+      "path": "/ticket-qr/index"
+    },
+    {
+      "path": "/ticket-verify/index"
+    },
+    {
+      "path": "/3d-customization/index"
+    },
+    {
+      "path": "/premium-customization/index"
+    },
+    {
+      "path": "/customization-list/index"
+    },
+    {
+      "path": "/customization-detail/index"
+    },
+    {
+      "path": "/customization-success/index"
+    },
+    {
+      "path": "/address-list/index"
+    },
+    {
+      "path": "/address-edit/index"
+    },
+    {
+      "path": "/profile-edit/index"
+    },
+    {
+      "path": "/change-password/index"
+    },
+    {
+      "path": "/help/index"
+    },
+    {
+      "path": "/customer-service/index"
+    },
+    {
+      "path": "/customization-confirm/index"
+    },
+    {
+      "path": "/admin-orders/index"
+    },
+    {
+      "path": "/admin-refunds/index"
+    },
+    {
+      "path": "/admin-customizations/index"
+    },
+    {
+      "path": "/refund-apply/index"
+    },
+    {
+      "path": "/announcement-detail/index"
+    },
+    {
+      "path": "/announcements/index"
+    },
+    {
+      "path": "/notes/index"
+    },
+    {
+      "path": "/note-create/index"
+    },
+    {
+      "path": "/note-detail/index"
+    },
+    {
+      "path": "/my-notes/index"
+    },
+    {
+      "path": "/my-comments/index"
+    },
+    {
+      "path": "/privacy-settings/index"
+    },
+    {
+      "path": "/about-us/index"
+    },
+    {
+      "path": "/note-report/index"
+    },
+    {
+      "path": "/product-select/index"
+    },
+    {
+      "path": "/messages/index"
+    },
+    {
+      "path": "/admin-reports/index"
+    },
+    {
+      "path": "/user-profile/index"
+    },
+    {
+      "path": "/draft-box/index"
+    },
+    {
+      "path": "/following-list/index"
+    },
+    {
+      "path": "/digital-ip/index"
+    },
+    {
+      "path": "/member-center/index"
+    },
+    {
+      "path": "/exclusive-content/index"
+    },
+    {
+      "path": "/quiz/index"
+    },
+    {
+      "path": "/bug-report/index"
+    },
+    {
+      "path": "/product-review-create/index"
+    },
+    {
+      "path": "/ai-trade/index"
+    },
+    {
+      "path": "/ai-trade-translate/index"
+    },
+    {
+      "path": "/ai-trade-market/index"
+    },
+    {
+      "path": "/ai-trade-inquiry/index"
+    },
+    {
+      "path": "/ai-trade-quote/index"
+    },
+    {
+      "path": "/ai-trade-records/index"
+    },
+    {
+      "path": "/ai-trade-record-detail/index"
+    },
+    {
+      "path": "/ai-trade-dashboard/index"
+    },
+    {
+      "path": "/ai-trade-support/index"
+    },
+    {
+      "path": "/ai-trade-compliance/index"
+    },
+    {
+      "path": "/ai-trade-documents/index"
+    },
+    {
+      "path": "/ai-trade-customers/index"
+    },
+    {
+      "path": "/ai-trade-customer-detail/index"
+    },
+    {
+      "path": "/ai-trade-quote-workbench/index"
+    },
+    {
+      "path": "/ai-trade-marketing/index"
+    },
+    {
+      "path": "/social-link/index"
+    },
+    {
+      "path": "/after-sales/index"
+    },
+    {
+      "path": "/order-exceptions/index"
+    },
+    {
+      "path": "/merchant-admin/index"
+    },
+    {
+      "path": "/merchant-config/index"
+    },
+    {
+      "path": "/sku-management/index"
+    },
+    {
+      "path": "/merchant-products/index"
+    },
+    {
+      "path": "/merchant-orders/index"
+    },
+    {
+      "path": "/home/index"
+    },
+    {
+      "path": "/products/index"
+    },
+    {
+      "path": "/customization/index"
+    },
+    {
+      "path": "/notes/index"
+    },
+    {
+      "path": "/profile/index"
+    }
+  ]
+}

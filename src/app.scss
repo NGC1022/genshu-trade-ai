@@ -168,6 +168,11 @@
 }
 
 /* 通过 ?preview=desktop / ?preview=mobile 提供两种稳定展示尺寸。 */
+html[data-preview='desktop'] {
+  /* Taro H5 默认将 rem 根值放大到 40px，导致桌面端所有 Tailwind 尺寸像手机放大版。 */
+  font-size: 0.75rem !important;
+}
+
 html[data-preview='desktop'] body {
   width: 100%;
   overflow-x: hidden;
@@ -300,6 +305,115 @@ html[data-preview='mobile'] .preview-home-page .home-product-grid,
 html[data-preview='mobile'] .preview-products-page .product-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+/* 电脑端采用网站式顶部导航，而不是把手机底部导航原样放在页面底部。 */
+html[data-preview='desktop'] .taro-tabbar__tabbar {
+  position: fixed !important;
+  top: 0 !important;
+  bottom: auto !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 72px !important;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 4px 18px rgba(82, 11, 15, 0.08);
+}
+
+html[data-preview='desktop'] .taro-tabbar__container {
+  padding-top: 72px;
+  box-sizing: border-box;
+}
+
+html[data-preview='desktop'] .taro-tabbar__panel {
+  padding-top: 72px;
+  box-sizing: border-box;
+}
+
+html[data-preview='desktop'] .taro-tabbar__tabbar .weui-tabbar {
+  height: 72px;
+  max-width: 1180px;
+  margin-inline: auto;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  background: transparent;
+}
+
+html[data-preview='desktop'] .taro-tabbar__tabbar .weui-tabbar__item {
+  flex: 0 0 132px;
+  height: 72px;
+  padding: 12px 18px 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: hsl(var(--muted-foreground));
+}
+
+html[data-preview='desktop'] .taro-tabbar__tabbar .weui-tabbar__item.weui-bar__item_on {
+  color: hsl(var(--accent));
+  background: hsl(var(--primary) / 0.06);
+}
+
+html[data-preview='desktop'] .taro-tabbar__tabbar .weui-tabbar__icon {
+  width: 22px;
+  height: 22px;
+  margin-bottom: 4px;
+}
+
+html[data-preview='desktop'] .taro-tabbar__tabbar .weui-tabbar__label {
+  width: auto;
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+html[data-preview='desktop'] .preview-home-page .home-hero {
+  height: 300px;
+}
+
+html[data-preview='desktop'] .preview-home-page .home-featured-banner {
+  min-height: 218px;
+  padding: 32px 40px;
+}
+
+html[data-preview='desktop'] .preview-home-page .home-featured-banner .text-2xl {
+  font-size: 2rem;
+  line-height: 1.25;
+}
+
+html[data-preview='desktop'] .taro_page .text-xs {
+  font-size: 1rem;
+}
+
+html[data-preview='desktop'] .taro_page .text-sm {
+  font-size: 1.1667rem;
+}
+
+html[data-preview='desktop'] .taro_page .text-base {
+  font-size: 1.3333rem;
+}
+
+html[data-preview='desktop'] .taro_page .text-lg {
+  font-size: 1.5rem;
+}
+
+html[data-preview='desktop'] .taro_page .text-xl {
+  font-size: 1.6667rem;
+}
+
+html[data-preview='desktop'] .taro_page .text-2xl {
+  font-size: 2rem;
+}
+
+html[data-preview='desktop'] .taro_page .text-3xl {
+  font-size: 2.5rem;
 }
 
 /* AI 分析内容使用明确的标签—正文节奏，长文本不与相邻字段粘连。 */

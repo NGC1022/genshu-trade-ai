@@ -152,7 +152,10 @@ export default function AiTradeMarketing() {
       const mediaUrls = sku?.image_url && /^https?:\/\//.test(sku.image_url) ? [sku.image_url] : undefined
       const validation = await validateSocialPost({post, platforms: ['instagram', 'facebook'], mediaUrls})
       if (validation.status === 'error') throw new Error(String(validation.message || '社交内容校验未通过'))
-      const confirm = await Taro.showModal({title: '提交社交平台审核', content: '内容将提交到 Ayrshare 待审核队列，不会绕过确认直接公开发布。是否继续？'})
+      const confirm = await Taro.showModal({
+        title: '提交社交平台审核',
+        content: '内容将提交到 Ayrshare 待审核队列，不会绕过确认直接公开发布。是否继续？'
+      })
       if (!confirm.confirm) return
       const result = await submitSocialPost({post, platforms: ['instagram', 'facebook'], mediaUrls})
       Taro.showToast({title: result.status === 'error' ? '提交失败' : '已进入社交平台待审核队列', icon: 'none'})
@@ -329,10 +332,14 @@ export default function AiTradeMarketing() {
           {reviewed && (
             <View className="bg-violet-50 border border-violet-200 rounded-2xl p-4">
               <Text className="text-sm text-violet-800 font-bold block mb-2">Instagram / Facebook 发布</Text>
-              <Text className="text-xs text-violet-700 leading-relaxed block mb-3">先连接专业账号，再校验平台格式；提交后进入 Ayrshare 待审核队列，不会未经确认直接公开发布。</Text>
+              <Text className="text-xs text-violet-700 leading-relaxed block mb-3">
+                先连接专业账号，再校验平台格式；提交后进入 Ayrshare 待审核队列，不会未经确认直接公开发布。
+              </Text>
               <View className="flex flex-row gap-2">
                 <View className="flex-1 bg-white border border-violet-200 rounded-xl" onClick={handleLinkSocial}>
-                  <Text className="text-sm text-violet-700 font-bold text-center py-2.5">{socialLoading ? '处理中…' : '连接账号'}</Text>
+                  <Text className="text-sm text-violet-700 font-bold text-center py-2.5">
+                    {socialLoading ? '处理中…' : '连接账号'}
+                  </Text>
                 </View>
                 <View className="flex-1 bg-violet-600 rounded-xl" onClick={handleSocialPublish}>
                   <Text className="text-sm text-white font-bold text-center py-2.5">校验并提交</Text>
