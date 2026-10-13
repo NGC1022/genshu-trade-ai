@@ -65,6 +65,8 @@ export default function TicketDetail() {
     )
   }
 
+  if (!ticket) return null
+
   return (
     <View className="bg-gradient-subtle min-h-screen">
       <ScrollView className="flex-1" scrollY>
