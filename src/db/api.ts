@@ -1,5 +1,6 @@
-import {supabase} from '@/client/supabase'
-import {DEMO_CATALOG, DEMO_TICKET_TYPES, getDemoSKU} from '@/data/demoCatalog'
+import Taro from '@tarojs/taro'
+import {isSupabaseConfigured, supabase} from '@/client/supabase'
+import {DEMO_3D_TEMPLATES, DEMO_CATALOG, DEMO_PICKUP_LOCATIONS, DEMO_TICKET_TYPES, getDemoSKU} from '@/data/demoCatalog'
 import type {
   Address,
   AfterSaleInput,
@@ -60,6 +61,29 @@ import type {
 } from './types'
 
 const BUCKET_NAME = 'app-9dlnarhqk45d_images'
+const LOCAL_ADDRESS_KEY = 'genshu-demo-addresses'
+
+function getLocalAddresses(userId: string): Address[] {
+  const all = Taro.getStorageSync(LOCAL_ADDRESS_KEY)
+  return Array.isArray(all) ? all.filter((address) => address.user_id === userId) : []
+}
+
+function saveLocalAddresses(userId: string, addresses: Address[]) {
+  const all = Taro.getStorageSync(LOCAL_ADDRESS_KEY)
+  const otherUsers = Array.isArray(all) ? all.filter((address) => address.user_id !== userId) : []
+  Taro.setStorageSync(LOCAL_ADDRESS_KEY, [...otherUsers, ...addresses])
+}
+
+function createLocalAddress(address: Omit<Address, 'id' | 'created_at' | 'updated_at'>) {
+  const now = new Date().toISOString()
+  const addresses = getLocalAddresses(address.user_id)
+  const next: Address = {...address, id: `demo-address-${Date.now()}`, created_at: now, updated_at: now}
+  saveLocalAddresses(
+    address.user_id,
+    next.is_default ? [...addresses.map((item) => ({...item, is_default: false})), next] : [...addresses, next]
+  )
+  return next
+}
 
 // ==================== 用户相关 ====================
 
@@ -128,7 +152,8 @@ export async function getPickupLocations() {
     .select('*')
     .eq('is_active', true)
     .order('created_at', {ascending: false})
-  return {data: (Array.isArray(data) ? data : []) as any[], error}
+  const onlineData = Array.isArray(data) ? data : []
+  return {data: onlineData.length > 0 ? onlineData : DEMO_PICKUP_LOCATIONS, error: onlineData.length > 0 ? error : null}
 }
 
 // ==================== 门票相关 ====================
@@ -154,54 +179,119 @@ export async function getTicketTypeDetail(id: string) {
 // ==================== 地址相关 ====================
 
 export async function getAddressList(userId: string) {
+  if (!isSupabaseConfigured) return {data: getLocalAddresses(userId), error: null}
   const {data, error} = await supabase
     .from('addresses')
     .select('*')
     .eq('user_id', userId)
     .order('is_default', {ascending: false})
     .order('created_at', {ascending: false})
+  if (error) return {data: getLocalAddresses(userId), error: null}
   return {data: (Array.isArray(data) ? data : []) as Address[], error}
 }
 
 export async function getDefaultAddress(userId: string) {
+  if (!isSupabaseConfigured)
+    return {data: getLocalAddresses(userId).find((address) => address.is_default) || null, error: null}
   const {data, error} = await supabase
     .from('addresses')
     .select('*')
     .eq('user_id', userId)
     .eq('is_default', true)
     .maybeSingle()
+  if (error) return {data: getLocalAddresses(userId).find((address) => address.is_default) || null, error: null}
   return {data: data as Address | null, error}
 }
 
 export async function getAddressDetail(id: string) {
+  if (!isSupabaseConfigured) {
+    const all = Taro.getStorageSync(LOCAL_ADDRESS_KEY)
+    return {data: (Array.isArray(all) ? all.find((address) => address.id === id) : null) || null, error: null}
+  }
   const {data, error} = await supabase.from('addresses').select('*').eq('id', id).maybeSingle()
+  if (error) {
+    const all = Taro.getStorageSync(LOCAL_ADDRESS_KEY)
+    return {data: (Array.isArray(all) ? all.find((address) => address.id === id) : null) || null, error: null}
+  }
   return {data: data as Address | null, error}
 }
 
 export async function createAddress(address: Omit<Address, 'id' | 'created_at' | 'updated_at'>) {
+  if (!isSupabaseConfigured) {
+    return {data: createLocalAddress(address), error: null}
+  }
   if (address.is_default) {
     await supabase.from('addresses').update({is_default: false}).eq('user_id', address.user_id)
   }
   const {data, error} = await supabase.from('addresses').insert(address).select().maybeSingle()
+  if (error) return {data: createLocalAddress(address), error: null}
   return {data: data as Address | null, error}
 }
 
 export async function updateAddress(id: string, updates: Partial<Address>) {
+  if (!isSupabaseConfigured) {
+    const userId = updates.user_id || String(Taro.getStorageSync('demo-user-id') || '')
+    const addresses = getLocalAddresses(userId)
+    const existing = addresses.find((address) => address.id === id)
+    if (!existing) return {data: null, error: new Error('地址不存在')}
+    const next = {...existing, ...updates, updated_at: new Date().toISOString()}
+    const nextList = updates.is_default
+      ? addresses.map((address) => ({...address, is_default: address.id === id}))
+      : addresses.map((address) => (address.id === id ? next : address))
+    saveLocalAddresses(userId, nextList)
+    return {data: next, error: null}
+  }
   if (updates.is_default && updates.user_id) {
     await supabase.from('addresses').update({is_default: false}).eq('user_id', updates.user_id)
   }
   const {data, error} = await supabase.from('addresses').update(updates).eq('id', id).select().maybeSingle()
+  if (error && updates.user_id) {
+    const addresses = getLocalAddresses(updates.user_id)
+    const existing = addresses.find((address) => address.id === id)
+    if (existing) {
+      const next = {...existing, ...updates, updated_at: new Date().toISOString()}
+      saveLocalAddresses(
+        updates.user_id,
+        updates.is_default
+          ? addresses.map((address) => ({...address, is_default: address.id === id}))
+          : addresses.map((address) => (address.id === id ? next : address))
+      )
+      return {data: next, error: null}
+    }
+  }
   return {data: data as Address | null, error}
 }
 
 export async function deleteAddress(id: string) {
+  if (!isSupabaseConfigured) {
+    const all = Taro.getStorageSync(LOCAL_ADDRESS_KEY)
+    Taro.setStorageSync(LOCAL_ADDRESS_KEY, Array.isArray(all) ? all.filter((address) => address.id !== id) : [])
+    return {error: null}
+  }
   const {error} = await supabase.from('addresses').delete().eq('id', id)
+  if (error) {
+    const all = Taro.getStorageSync(LOCAL_ADDRESS_KEY)
+    Taro.setStorageSync(LOCAL_ADDRESS_KEY, Array.isArray(all) ? all.filter((address) => address.id !== id) : [])
+    return {error: null}
+  }
   return {error}
 }
 
 export async function setDefaultAddress(id: string, userId: string) {
+  if (!isSupabaseConfigured) {
+    const addresses = getLocalAddresses(userId)
+    const nextList = addresses.map((address) => ({...address, is_default: address.id === id}))
+    saveLocalAddresses(userId, nextList)
+    return {data: nextList.find((address) => address.id === id) || null, error: null}
+  }
   await supabase.from('addresses').update({is_default: false}).eq('user_id', userId)
   const {data, error} = await supabase.from('addresses').update({is_default: true}).eq('id', id).select().maybeSingle()
+  if (error) {
+    const addresses = getLocalAddresses(userId)
+    const nextList = addresses.map((address) => ({...address, is_default: address.id === id}))
+    saveLocalAddresses(userId, nextList)
+    return {data: nextList.find((address) => address.id === id) || null, error: null}
+  }
   return {data: data as Address | null, error}
 }
 
@@ -346,7 +436,11 @@ export async function getThreeDTemplates() {
     .select('*')
     .eq('is_active', true)
     .order('created_at', {ascending: false})
-  return {data: (Array.isArray(data) ? data : []) as ThreeDTemplate[], error}
+  const onlineData = (Array.isArray(data) ? data : []) as ThreeDTemplate[]
+  return {
+    data: onlineData.length > 0 ? onlineData : (DEMO_3D_TEMPLATES as ThreeDTemplate[]),
+    error: onlineData.length > 0 ? error : null
+  }
 }
 
 // ==================== 知识问答相关 ====================

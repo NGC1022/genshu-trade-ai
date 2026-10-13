@@ -1,12 +1,13 @@
 import {Image, ScrollView, Text, View} from '@tarojs/components'
 import Taro, {useDidShow} from '@tarojs/taro'
 import {useState} from 'react'
+import {DEMO_CATALOG} from '@/data/demoCatalog'
 import {getSKUList} from '@/db/api'
 import type {SKU} from '@/db/types'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 
 export default function ProductSelect() {
-  const [products, setProducts] = useState<SKU[]>([])
+  const [products, setProducts] = useState<SKU[]>(DEMO_CATALOG)
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
 
   useDidShow(() => {

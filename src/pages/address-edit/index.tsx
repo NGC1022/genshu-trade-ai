@@ -742,7 +742,7 @@ export default function AddressEdit() {
   }, [id, loadAddress])
 
   const updateField = (field: string, value: any) => {
-    setFormData({...formData, [field]: value})
+    setFormData((current) => ({...current, [field]: value}))
   }
 
   const handleProvinceChange = (e: any) => {
@@ -874,7 +874,7 @@ export default function AddressEdit() {
       }
 
       if (id) {
-        const {error} = await updateAddress(id, formData)
+        const {error} = await updateAddress(id, {...formData, user_id: user.id})
         if (error) throw error
       } else {
         const {error} = await createAddress(addressData)

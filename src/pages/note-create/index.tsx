@@ -7,6 +7,17 @@ import type {SKU} from '@/db/types'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 import {checkNoteSafety} from '@/utils/security'
 
+const NOTE_LOCATION_OPTIONS = [
+  {
+    name: '根书文创园游客中心',
+    address: '北京市房山区青龙湖镇根书文创园游客中心',
+    latitude: 39.7256,
+    longitude: 116.0147
+  },
+  {name: '根书艺术馆', address: '北京市房山区青龙湖镇根书文创园艺术馆', latitude: 39.7245, longitude: 116.0135},
+  {name: '根书文创园纪念品店', address: '北京市房山区青龙湖镇根书文创园1号楼', latitude: 39.7234, longitude: 116.0123}
+]
+
 export default function NoteCreate() {
   const router = useRouter()
   const {draftId} = router.params
@@ -21,6 +32,8 @@ export default function NoteCreate() {
   const [recommendedProducts, setRecommendedProducts] = useState<string[]>([])
   const [recommendedSKUs, setRecommendedSKUs] = useState<SKU[]>([])
   const [loading, setLoading] = useState(false)
+  const [showLocationTools, setShowLocationTools] = useState(false)
+  const [locationKeyword, setLocationKeyword] = useState('')
 
   const loadRecommendedSKUs = useCallback(async (skus: string[]) => {
     if (skus.length === 0) {
@@ -186,6 +199,28 @@ export default function NoteCreate() {
       }
     }
   }
+
+  const handleUseCurrentLocation = async () => {
+    try {
+      const res = await Taro.getLocation({type: 'gcj02'})
+      setLocation({
+        latitude: res.latitude,
+        longitude: res.longitude,
+        address: `我的当前位置（${res.latitude.toFixed(5)}, ${res.longitude.toFixed(5)}）`
+      })
+      setShowLocationTools(false)
+      Taro.showToast({title: '已获取当前位置', icon: 'success'})
+    } catch (e: any) {
+      Taro.showToast({
+        title: e?.errMsg?.includes('auth deny') ? '请在设置中允许定位权限' : '暂时无法获取当前位置',
+        icon: 'none'
+      })
+    }
+  }
+
+  const filteredLocationOptions = NOTE_LOCATION_OPTIONS.filter((item) =>
+    `${item.name}${item.address}`.includes(locationKeyword.trim())
+  )
 
   const handleAddProduct = () => {
     // 将已选商品存入缓存供选择页初始化
@@ -406,7 +441,7 @@ export default function NoteCreate() {
           {/* 位置 */}
           <View
             className="flex flex-row items-center border-t border-slate-100 py-4 mb-4 active:bg-slate-50"
-            onClick={handleChooseLocation}>
+            onClick={() => setShowLocationTools((current) => !current)}>
             <View className="i-mdi-map-marker text-xl text-blue-500 mr-2" />
             <Text className="flex-1 text-base text-slate-700">{location ? location.address : '添加位置'}</Text>
             {location && (
@@ -419,6 +454,37 @@ export default function NoteCreate() {
               />
             )}
           </View>
+
+          {showLocationTools && (
+            <View className="bg-blue-50 rounded-xl p-3 mb-4 border border-blue-100">
+              <View className="flex flex-row gap-2 mb-3">
+                <View className="flex-1 bg-white rounded-lg px-3 py-2" onClick={handleUseCurrentLocation}>
+                  <Text className="text-sm text-blue-700 font-bold">使用当前位置</Text>
+                </View>
+                <View className="flex-1 bg-white rounded-lg px-3 py-2" onClick={handleChooseLocation}>
+                  <Text className="text-sm text-blue-700 font-bold">打开地图选择</Text>
+                </View>
+              </View>
+              <Input
+                className="bg-white rounded-lg px-3 py-2 text-sm"
+                placeholder="搜索园区、艺术馆或店铺"
+                value={locationKeyword}
+                onInput={(e) => setLocationKeyword(e.detail.value)}
+              />
+              {filteredLocationOptions.map((item) => (
+                <View
+                  key={item.name}
+                  className="bg-white rounded-lg p-3 mt-2"
+                  onClick={() => {
+                    setLocation(item)
+                    setShowLocationTools(false)
+                  }}>
+                  <Text className="text-sm font-bold text-slate-700 block">{item.name}</Text>
+                  <Text className="text-xs text-slate-500 block mt-1">{item.address}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* 产品推荐 */}
           <View className="border-t border-slate-100 py-4 mb-4">

@@ -1,6 +1,7 @@
 import {Button, Image, ScrollView, Text, View} from '@tarojs/components'
 import Taro, {useRouter} from '@tarojs/taro'
 import {useCallback, useEffect, useState} from 'react'
+import {DEMO_TICKET_TYPES} from '@/data/demoCatalog'
 import {getTicketTypeDetail} from '@/db/api'
 import type {TicketType} from '@/db/types'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
@@ -10,16 +11,22 @@ type TicketTypeKey = 'adult' | 'child_free' | 'teen' | 'senior' | 'student' | 'd
 export default function TicketPricing() {
   const router = useRouter()
   const {id} = router.params
-  const [ticket, setTicket] = useState<TicketType | null>(null)
+  const [ticket, setTicket] = useState<TicketType | null>(
+    () => DEMO_TICKET_TYPES.find((item) => item.id === id) || null
+  )
   const [selectedType, setSelectedType] = useState<TicketTypeKey>('adult')
   const [quantity, setQuantity] = useState(1)
   const [showPolicyDetail, setShowPolicyDetail] = useState(false)
 
   const loadTicket = useCallback(async () => {
-    const {data} = await getTicketTypeDetail(id!)
-    if (data) {
-      setTicket(data)
-    }
+    if (!id) return
+    const fallback = DEMO_TICKET_TYPES.find((item) => item.id === id)
+    if (fallback) setTicket(fallback)
+    const result = await Promise.race([
+      getTicketTypeDetail(id),
+      new Promise<{data: null}>((resolve) => setTimeout(() => resolve({data: null}), 1200))
+    ])
+    if (result.data) setTicket(result.data)
   }, [id])
 
   useEffect(() => {

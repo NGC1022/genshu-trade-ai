@@ -36,7 +36,7 @@ export const customFetch: typeof fetch = async (url: string, options: RequestIni
     header: headers,
     data: body,
     responseType: 'text',
-    timeout: 8000
+    timeout: process.env.TARO_ENV === 'h5' ? 2500 : 8000
   })
 
   // 全局启停提示

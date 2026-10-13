@@ -161,6 +161,55 @@ export const DEMO_TICKET_TYPES: TicketType[] = [
   }
 ]
 
+export const DEMO_PICKUP_LOCATIONS = [
+  {
+    id: 'demo-pickup-park',
+    name: '根书文创园游客中心',
+    address: '北京市房山区青龙湖镇根书文创园游客中心',
+    latitude: 39.7256,
+    longitude: 116.0147,
+    phone: '010-11223344'
+  },
+  {
+    id: 'demo-pickup-shop',
+    name: '根书文创园纪念品店',
+    address: '北京市房山区青龙湖镇根书文创园1号楼',
+    latitude: 39.7234,
+    longitude: 116.0123,
+    phone: '010-12345678'
+  }
+]
+
+export const DEMO_3D_TEMPLATES = [
+  {
+    id: 'demo-ip-genbao',
+    name: '根宝 IP 形象·灵动款',
+    description: '根宝数字 IP 立体摆件，支持底座文字定制。',
+    image_url: PRODUCT_IMAGES[3],
+    price: 199,
+    is_active: true,
+    created_at: createdAt
+  },
+  {
+    id: 'demo-ip-badge',
+    name: '根宝 IP 形象·徽章款',
+    description: '适合文化礼赠与收藏的根宝 IP 徽章。',
+    image_url: PRODUCT_IMAGES[0],
+    price: 49,
+    is_active: true,
+    created_at: createdAt
+  },
+  {
+    id: 'demo-ip-pendant',
+    name: '根宝 IP 形象·挂件款',
+    description: '轻量便携的根宝 IP 挂件，支持短文字定制。',
+    image_url: PRODUCT_IMAGES[1],
+    price: 29,
+    is_active: true,
+    created_at: createdAt
+  }
+]
+
 export function getDemoSKU(skuCode: string): SKU | null {
   return DEMO_CATALOG.find((item) => item.sku_code === skuCode) || null
 }

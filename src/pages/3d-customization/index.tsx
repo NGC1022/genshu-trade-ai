@@ -2,21 +2,21 @@ import {Image, Input, ScrollView, Text, View} from '@tarojs/components'
 import Taro, {useDidShow} from '@tarojs/taro'
 import {useCallback, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
+import {DEMO_3D_TEMPLATES} from '@/data/demoCatalog'
 import {getThreeDTemplates} from '@/db/api'
 import type {ThreeDTemplate} from '@/db/types'
 
 export default function ThreeDCustomization() {
   const {user} = useAuth()
-  const [templates, setTemplates] = useState<ThreeDTemplate[]>([])
+  const [templates, setTemplates] = useState<ThreeDTemplate[]>(DEMO_3D_TEMPLATES as ThreeDTemplate[])
   const [selectedTemplate, setSelectedTemplate] = useState('')
   const [customText, setCustomText] = useState('')
   const [loading, setLoading] = useState(false)
+  const selectedTemplateData = templates.find((template) => template.id === selectedTemplate)
 
   const loadTemplates = useCallback(async () => {
-    setLoading(true)
     const {data} = await getThreeDTemplates()
     setTemplates(data)
-    setLoading(false)
   }, [])
 
   useDidShow(() => {
@@ -47,6 +47,7 @@ export default function ThreeDCustomization() {
 
     const template = templates.find((t) => t.id === selectedTemplate)
     const estimatedPrice = template?.price || 0
+    setLoading(true)
 
     Taro.navigateTo({
       url: `/pages/customization-confirm/index?data=${encodeURIComponent(
@@ -105,6 +106,28 @@ export default function ThreeDCustomization() {
               ))}
             </View>
           </View>
+
+          {selectedTemplateData && customText.trim() && (
+            <View className="bg-card rounded-3xl p-6 mb-6 shadow-card border border-primary/20">
+              <View className="flex flex-row items-center mb-4">
+                <View className="i-mdi-cube-scan text-2xl text-primary mr-2" />
+                <Text className="text-xl font-bold text-foreground">定制效果预览</Text>
+              </View>
+              <View className="rounded-2xl bg-gradient-primary p-4 flex flex-col items-center">
+                <Image
+                  src={selectedTemplateData.image_url || ''}
+                  className="w-40 h-40 rounded-2xl bg-white/20"
+                  mode="aspectFit"
+                />
+                <View className="mt-3 rounded-lg bg-white/90 px-5 py-2 shadow-sm">
+                  <Text className="text-lg font-black text-primary tracking-widest">{customText.trim()}</Text>
+                </View>
+              </View>
+              <Text className="text-xs text-muted-foreground block mt-3 text-center">
+                这是手机端效果示意图，实际成品会根据模板比例和打印工艺微调。
+              </Text>
+            </View>
+          )}
 
           <View className="bg-card rounded-3xl p-6 mb-6 shadow-card border border-border border-opacity-10">
             <View className="flex flex-row items-center justify-between mb-6">

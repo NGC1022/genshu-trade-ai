@@ -4,6 +4,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {supabase} from '@/client/supabase'
 import DemoBadge from '@/components/DemoBadge'
 import {useAuth} from '@/contexts/AuthContext'
+import {DEMO_PICKUP_LOCATIONS} from '@/data/demoCatalog'
 import {createOrder, getDefaultAddress, getLogisticsPlans, getPickupLocations, getTradeTermsInfo} from '@/db/api'
 import type {Address, LogisticsPlanConfig, SKU} from '@/db/types'
 import {useDemoMode} from '@/hooks/useDemoMode'
@@ -20,7 +21,7 @@ export default function OrderConfirm() {
   const [cartItems, setCartItems] = useState<{sku: SKU; quantity: number}[]>([])
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null)
   const [deliveryMethod, setDeliveryMethod] = useState<'express' | 'pickup'>('express')
-  const [pickupLocations, setPickupLocations] = useState<any[]>([])
+  const [pickupLocations, setPickupLocations] = useState<any[]>(DEMO_PICKUP_LOCATIONS)
   const [selectedPickupIndex, setSelectedPickupIndex] = useState(0)
   const [pickupDate, setPickupDate] = useState('')
   const [pickupTime, setPickupTime] = useState('')
@@ -188,9 +189,7 @@ export default function OrderConfirm() {
     }
 
     const {data: locations} = await getPickupLocations()
-    if (locations) {
-      setPickupLocations(locations)
-    }
+    if (locations?.length) setPickupLocations(locations)
   }, [user])
 
   useEffect(() => {
