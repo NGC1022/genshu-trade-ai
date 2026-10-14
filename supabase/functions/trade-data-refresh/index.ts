@@ -1,5 +1,4 @@
 import JSZip from 'npm:jszip'
-import * as XLSX from 'npm:xlsx'
 import {createClient} from 'npm:@supabase/supabase-js@2'
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
@@ -34,7 +33,7 @@ const SOURCES = [
     sourceKey: 'mofcom-digital-trade',
     sourceName: '商务部服务贸易网数字贸易数据',
     publisher: '中华人民共和国商务部',
-    sourceUrl: 'https://tradeinservices.mofcom.gov.cn/article/hyly/szmy/202609/201057.html',
+    sourceUrl: 'https://dzswgf.mofcom.gov.cn/news/43/2026/9/1788845483794.html',
     documentType: 'policy'
   },
   {
@@ -57,6 +56,30 @@ async function sha256(value: string | ArrayBuffer) {
 function stripHtml(html: string) {
   return html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
 }
+function parseCsv(text: string): Record<string, unknown>[] {
+  const rows: string[][] = []
+  let row: string[] = []
+  let cell = ''
+  let quoted = false
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index]
+    const next = text[index + 1]
+    if (char === '"' && quoted && next === '"') { cell += '"'; index += 1; continue }
+    if (char === '"') { quoted = !quoted; continue }
+    if (char === ',' && !quoted) { row.push(cell); cell = ''; continue }
+    if ((char === '\n' || char === '\r') && !quoted) {
+      if (char === '\r' && next === '\n') index += 1
+      row.push(cell); cell = ''
+      if (row.some((value) => value.trim())) rows.push(row)
+      row = []
+      continue
+    }
+    cell += char
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row) }
+  const headers = rows.shift() || []
+  return rows.map((values) => Object.fromEntries(headers.map((header, index) => [header.trim(), values[index] ?? ''])))
+}
 function parseWtoRows(rows: Record<string, unknown>[], fetchedAt: string) {
   const output: Record<string, unknown>[] = []
   for (const row of rows) {
@@ -65,12 +88,16 @@ function parseWtoRows(rows: Record<string, unknown>[], fetchedAt: string) {
       const key = keys.find((candidate) => parts.some((part) => candidate.toLowerCase().includes(part)))
       return key ? row[key] : undefined
     }
-    const economy = String(get(['economy', 'reporter', 'country']) ?? '').trim()
+    const economy = String(row.REPORTER_NAME ?? get(['economy', 'country', 'reporter']) ?? '').trim()
     const year = Number(get(['year', 'period']))
     const flow = String(get(['flow', 'trade flow']) ?? '')
+    const indicator = String(get(['indicator_name', 'indicator']) ?? '')
+    const partner = String(get(['partner']) ?? '')
     const value = Number(String(get(['value', 'current us', 'million']) ?? '').replace(/,/g, ''))
-    if (!['China', 'United States', 'Japan', 'Singapore', 'Korea, Republic of', 'South Korea'].includes(economy)) continue
-    if (!Number.isFinite(year) || !Number.isFinite(value) || (flow && !/export/i.test(flow))) continue
+    if (!['China', 'United States', 'United States of America', 'Japan', 'Singapore', 'Korea, Republic of', 'South Korea'].includes(economy)) continue
+    if (!Number.isFinite(year) || !Number.isFinite(value) || (flow && flow !== 'X' && !/export/i.test(flow))) continue
+    if (indicator && !/^DDS$/i.test(indicator) && !/total digitally delivered services/i.test(indicator)) continue
+    if (partner && partner !== 'World') continue
     output.push({economy, year, value, unit: 'million USD', flow: 'exports', source: 'WTO Digitally Delivered Services', fetched_at: fetchedAt})
   }
   return Array.from(new Map(output.map((row) => [`${row.economy}-${row.year}`, row])).values())
@@ -79,14 +106,10 @@ async function fetchWtoDataset(fetchedAt: string) {
   const response = await fetch(WTO_ZIP, {headers: {'User-Agent': 'genshu-trade-ai/1.0'}})
   if (!response.ok) throw new Error(`WTO download failed: ${response.status}`)
   const archive = await JSZip.loadAsync(await response.arrayBuffer())
-  const workbookFile = Object.values(archive.files).find((file) => /\.xlsx?$/i.test(file.name))
-  if (!workbookFile) throw new Error('WTO workbook not found')
-  const workbook = XLSX.read(await workbookFile.async('arraybuffer'), {type: 'array', cellDates: false})
-  const rows: Record<string, unknown>[] = []
-  for (const sheetName of workbook.SheetNames) {
-    rows.push(...XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[sheetName], {defval: null}))
-  }
-  return parseWtoRows(rows, fetchedAt)
+  const dataFile = Object.values(archive.files).find((file) => /\.(csv|xlsx?)$/i.test(file.name))
+  if (!dataFile) throw new Error('WTO CSV/XLSX data file not found')
+  if (!/\.csv$/i.test(dataFile.name)) throw new Error('WTO source is expected to be CSV')
+  return parseWtoRows(parseCsv(await dataFile.async('text')), fetchedAt)
 }
 async function upsertDocument(source: typeof SOURCES[number], body: string, fetchedAt: string) {
   const contentHash = await sha256(body)

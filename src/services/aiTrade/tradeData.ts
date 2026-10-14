@@ -60,7 +60,7 @@ export const TRADE_DATA_SOURCES = [
     id: 'mofcom-digital-trade',
     name: '一组数据带你看我国数字贸易发展成绩单',
     publisher: '商务部服务贸易网',
-    url: 'https://tradeinservices.mofcom.gov.cn/article/hyly/szmy/202609/201057.html',
+    url: 'https://dzswgf.mofcom.gov.cn/news/43/2026/9/1788845483794.html',
     scope: '中国 · 2020–2025年 · 数字贸易相关指标',
     note: '可数字化交付服务进出口及电信、计算机和信息服务进出口数据。'
   }
@@ -110,7 +110,7 @@ export const TRADE_DATA_SNAPSHOT: TradeDataSnapshot[] = [
     unit: '亿美元',
     currency: 'USD',
     sourceName: '一组数据带你看我国数字贸易发展成绩单',
-    sourceUrl: 'https://tradeinservices.mofcom.gov.cn/article/hyly/szmy/202609/201057.html',
+    sourceUrl: 'https://dzswgf.mofcom.gov.cn/news/43/2026/9/1788845483794.html',
     publisher: '商务部服务贸易网',
     definition: '以数字化方式交付的服务贸易规模。不能与跨境电商货物规模直接相加。',
     status: 'official',
@@ -126,7 +126,7 @@ export const TRADE_DATA_SNAPSHOT: TradeDataSnapshot[] = [
     unit: '亿美元',
     currency: 'USD',
     sourceName: '一组数据带你看我国数字贸易发展成绩单',
-    sourceUrl: 'https://tradeinservices.mofcom.gov.cn/article/hyly/szmy/202609/201057.html',
+    sourceUrl: 'https://dzswgf.mofcom.gov.cn/news/43/2026/9/1788845483794.html',
     publisher: '商务部服务贸易网',
     definition: '电信、计算机和信息服务进出口。',
     status: 'official',
@@ -142,7 +142,7 @@ export const TRADE_DATA_SNAPSHOT: TradeDataSnapshot[] = [
     unit: '亿美元',
     currency: 'USD',
     sourceName: '一组数据带你看我国数字贸易发展成绩单',
-    sourceUrl: 'https://tradeinservices.mofcom.gov.cn/article/hyly/szmy/202609/201057.html',
+    sourceUrl: 'https://dzswgf.mofcom.gov.cn/news/43/2026/9/1788845483794.html',
     publisher: '商务部服务贸易网',
     definition: '电信、计算机和信息服务进出口。',
     status: 'official',
@@ -209,7 +209,9 @@ export async function fetchLiveTradeData(): Promise<{data: TradeDataSnapshot[]; 
     const {data, error} = await supabase.functions.invoke('trade-data-sync', {body: {}})
     const list = data && Array.isArray(data.data) ? (data.data as TradeDataSnapshot[]) : []
     if (error || list.length === 0) throw error || new Error('实时贸易数据为空')
-    activeTradeDataSnapshot = [...TRADE_DATA_SNAPSHOT, ...list]
+    const merged = new Map<string, TradeDataSnapshot>()
+    for (const item of [...TRADE_DATA_SNAPSHOT, ...list]) merged.set(item.id, item)
+    activeTradeDataSnapshot = Array.from(merged.values()).sort((a, b) => a.year - b.year)
     return {data: activeTradeDataSnapshot, live: true, fetchedAt: data.fetched_at}
   } catch {
     activeTradeDataSnapshot = TRADE_DATA_SNAPSHOT
@@ -234,8 +236,7 @@ export function calculateCagr(start: number, end: number, years: number): number
   return Number((((end / start) ** (1 / years) - 1) * 100).toFixed(1))
 }
 
-export function getSnapshotSummary() {
-  const snapshot = activeTradeDataSnapshot
+export function getSnapshotSummary(snapshot = activeTradeDataSnapshot) {
   const ecommerce = snapshot.filter((item) => item.indicator === '跨境电商进出口规模').sort((a, b) => a.year - b.year)
   const digital = snapshot
     .filter((item) => item.indicator === '电信、计算机和信息服务进出口' || item.indicator === '数字化交付服务出口')

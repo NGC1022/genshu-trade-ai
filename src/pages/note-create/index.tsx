@@ -256,7 +256,7 @@ export default function NoteCreate() {
     }
 
     setLoading(true)
-    await createNote({
+    const {error} = await createNote({
       user_id: user.id,
       title: title.trim() || '根书文化随笔',
       content,
@@ -268,12 +268,16 @@ export default function NoteCreate() {
     })
     setLoading(false)
 
-    Taro.showToast({title: '发布成功', icon: 'success'})
-    // 如果是从草稿编辑的，删除草稿
-    if (draftId) {
-      await import('@/db/api').then((m) => m.deleteDraft(draftId))
+    if (error) {
+      Taro.showToast({title: `发布失败: ${String(error)}`, icon: 'none'})
+    } else {
+      Taro.showToast({title: '发布成功', icon: 'success'})
+      // 如果是从草稿编辑的，删除草稿
+      if (draftId) {
+        await import('@/db/api').then((m) => m.deleteDraft(draftId))
+      }
+      setTimeout(() => Taro.navigateBack(), 1500)
     }
-    setTimeout(() => Taro.navigateBack(), 1500)
   }
 
   const handleSaveDraft = async () => {

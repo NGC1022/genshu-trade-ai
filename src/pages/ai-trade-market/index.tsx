@@ -90,6 +90,17 @@ export default function AiTradeMarket() {
     })
   }, [])
 
+  const openSource = (url: string) => {
+    const runtime = globalThis as any
+    if (runtime.window?.open) runtime.window.open(url, '_blank', 'noopener,noreferrer')
+    else Taro.setClipboardData({data: url, success: () => Taro.showToast({title: '来源链接已复制', icon: 'success'})})
+  }
+
+  const latestEcommerce = summary.ecommerce[summary.ecommerce.length - 1]
+  const latestDelivered = getTradeDataSnapshot().find((item) => item.indicator === '可数字化交付服务进出口')
+  const ecommerceChange =
+    summary.ecommerceYoY === null ? '待更新' : `同比 ${summary.ecommerceYoY > 0 ? '+' : ''}${summary.ecommerceYoY}%`
+
   const buildInput = useCallback(
     (sku: SKU): ProductIntlInput => ({
       productId: sku.sku_code,
@@ -308,14 +319,14 @@ export default function AiTradeMarket() {
         </View>
         <View className="grid grid-cols-2 gap-2">
           <View className="bg-muted/60 rounded-2xl p-3">
-            <Text className="text-xl text-foreground font-black block">2.84</Text>
+            <Text className="text-xl text-foreground font-black block">{latestEcommerce?.value ?? '--'}</Text>
             <Text className="text-xs text-muted-foreground">2025中国跨境电商（万亿元）</Text>
-            <Text className="text-xs text-emerald-700 font-bold mt-1">同比 +4.8%</Text>
+            <Text className="text-xs text-emerald-700 font-bold mt-1">{ecommerceChange}</Text>
           </View>
           <View className="bg-muted/60 rounded-2xl p-3">
-            <Text className="text-xl text-foreground font-black block">4323.1</Text>
+            <Text className="text-xl text-foreground font-black block">{latestDelivered?.value ?? '--'}</Text>
             <Text className="text-xs text-muted-foreground">2025可数字化交付服务（亿美元）</Text>
-            <Text className="text-xs text-emerald-700 font-bold mt-1">同比 +6.3%</Text>
+            <Text className="text-xs text-emerald-700 font-bold mt-1">官方口径</Text>
           </View>
           <View className="bg-muted/60 rounded-2xl p-3">
             <Text className="text-xl text-foreground font-black block">{summary.digitalCagr || '--'}%</Text>
@@ -345,8 +356,8 @@ export default function AiTradeMarket() {
                 <Text className="text-xs text-muted-foreground leading-relaxed mt-1">
                   {item.value} {item.unit} · {item.definition}
                 </Text>
-                <Text className="text-[10px] text-primary mt-1">
-                  {item.publisher} · {item.updatedAt}
+                <Text className="text-[10px] text-primary underline mt-1" onClick={() => openSource(item.sourceUrl)}>
+                  {item.publisher} · {item.updatedAt} · 打开来源 ↗
                 </Text>
               </View>
             ))}

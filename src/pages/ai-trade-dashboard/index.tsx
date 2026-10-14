@@ -6,7 +6,14 @@ import {useAuth} from '@/contexts/AuthContext'
 import {getAiTradeRecords} from '@/db/api'
 import type {AiTradeRecord} from '@/db/types'
 import {AI_DISCLAIMER} from '@/services/aiTrade'
-import {getSnapshotSummary, scoreMarkets, TRADE_DATA_SNAPSHOT, TRADE_DATA_SOURCES} from '@/services/aiTrade/tradeData'
+import {
+  fetchLiveTradeData,
+  getSnapshotSummary,
+  getTradeDataSnapshot,
+  scoreMarkets,
+  TRADE_DATA_SNAPSHOT,
+  TRADE_DATA_SOURCES
+} from '@/services/aiTrade/tradeData'
 
 class DashboardChart extends Component<{canvasId: string; option: Record<string, unknown>; height?: string}> {
   chartRef = createRef<any>()
@@ -46,6 +53,9 @@ export default function AiTradeDashboard() {
   const [records, setRecords] = useState<AiTradeRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [showSources, setShowSources] = useState(false)
+  const [liveData, setLiveData] = useState(false)
+  const [dataFetchedAt, setDataFetchedAt] = useState<string | null>(null)
+  const [_dataVersion, setDataVersion] = useState(0)
   const summary = useMemo(() => getSnapshotSummary(), [])
   const marketScores = useMemo(() => scoreMarkets(), [])
 
@@ -60,7 +70,17 @@ export default function AiTradeDashboard() {
     setLoading(false)
   }, [user])
 
-  useDidShow(() => loadRecords())
+  const loadLiveData = useCallback(async () => {
+    const result = await fetchLiveTradeData()
+    setLiveData(result.live)
+    setDataFetchedAt(result.fetchedAt || null)
+    setDataVersion((version) => version + 1)
+  }, [])
+
+  useDidShow(() => {
+    loadRecords()
+    loadLiveData()
+  })
 
   const usageStats = useMemo(() => {
     const marketAnalyses = records.filter((record) => record.type === 'market_analysis').length
@@ -83,6 +103,11 @@ export default function AiTradeDashboard() {
       informationShare: total ? ((information / total) * 100).toFixed(1) : '--'
     }
   }, [])
+
+  const latestEcommerce = summary.ecommerce[summary.ecommerce.length - 1]
+  const latestDigital = getTradeDataSnapshot().find((item) => item.indicator === '可数字化交付服务进出口')
+  const ecommerceChange =
+    summary.ecommerceYoY === null ? '待更新' : `同比 ${summary.ecommerceYoY > 0 ? '+' : ''}${summary.ecommerceYoY}%`
 
   const openSource = (url: string) => {
     const runtime = globalThis as any
@@ -175,7 +200,16 @@ export default function AiTradeDashboard() {
                 <Text className="text-xs text-emerald-300 font-black tracking-[2px]">AI TRADE / DASHBOARD</Text>
                 <Text className="text-2xl md:text-3xl text-white font-black block mt-2">数字贸易数据看板</Text>
               </View>
-              <SourceBadge tone="snapshot">课堂展示版</SourceBadge>
+              <View className="flex flex-row items-center gap-2">
+                <SourceBadge tone={liveData ? 'official' : 'snapshot'}>
+                  {liveData ? '实时官方快照' : '课堂快照'}
+                </SourceBadge>
+                <View
+                  className="rounded-full bg-white/10 px-3 py-1.5"
+                  onClick={() => Taro.navigateTo({url: '/pages/ai-trade-records/index'})}>
+                  <Text className="text-xs text-white font-bold">导出记录</Text>
+                </View>
+              </View>
             </View>
             <Text className="text-sm text-slate-300 leading-relaxed mt-3 max-w-[720px]">
               将跨境电商货物贸易、服务贸易和数字化交付服务分口径展示，再由 AI 辅助解释，最后落到商品与市场行动。
@@ -192,20 +226,25 @@ export default function AiTradeDashboard() {
               <View className="rounded-full bg-amber-400/15 px-3 py-1.5">
                 <Text className="text-xs text-amber-200">结论需人工复核</Text>
               </View>
+              {liveData && dataFetchedAt ? (
+                <View className="rounded-full bg-white/10 px-3 py-1.5">
+                  <Text className="text-xs text-slate-200">更新于 {dataFetchedAt}</Text>
+                </View>
+              ) : null}
             </View>
           </View>
         </View>
 
         <View className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <View className="bg-card rounded-2xl p-4 border border-border border-opacity-10">
-            <Text className="text-2xl text-primary font-black block">2.84</Text>
+            <Text className="text-2xl text-primary font-black block">{latestEcommerce?.value ?? '--'}</Text>
             <Text className="text-xs text-muted-foreground">2025中国跨境电商（万亿元）</Text>
-            <Text className="text-xs text-emerald-700 font-bold mt-1">同比 +4.8%</Text>
+            <Text className="text-xs text-emerald-700 font-bold mt-1">{ecommerceChange}</Text>
           </View>
           <View className="bg-card rounded-2xl p-4 border border-border border-opacity-10">
-            <Text className="text-2xl text-teal-700 font-black block">4323.1</Text>
+            <Text className="text-2xl text-teal-700 font-black block">{latestDigital?.value ?? '--'}</Text>
             <Text className="text-xs text-muted-foreground">可数字化交付服务（亿美元）</Text>
-            <Text className="text-xs text-emerald-700 font-bold mt-1">同比 +6.3%</Text>
+            <Text className="text-xs text-emerald-700 font-bold mt-1">官方口径</Text>
           </View>
           <View className="bg-card rounded-2xl p-4 border border-border border-opacity-10">
             <Text className="text-2xl text-amber-700 font-black block">{summary.digitalCagr || '--'}%</Text>

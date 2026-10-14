@@ -73,7 +73,7 @@ export default {
           // 提供接口切换 HMR
           server.middlewares.use('/innerapi/v1/sourcecode/__hmr_off', (_req, res) => {
             hmrEnabled = false
-            let body = {
+            const body = {
               status: 0,
               msg: 'HMR disabled'
             }
@@ -84,7 +84,7 @@ export default {
           server.middlewares.use('/innerapi/v1/sourcecode/__hmr_on', (_req, res) => {
             hmrEnabled = true
             flushPendingFullReload()
-            let body = {
+            const body = {
               status: 0,
               msg: 'HMR enabled'
             }
@@ -103,7 +103,7 @@ export default {
               pendingFullReload = true
             }
             res.statusCode = 200
-            let body = {
+            const body = {
               status: 0,
               msg: 'Manual full reload triggered'
             }
