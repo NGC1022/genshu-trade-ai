@@ -32,12 +32,18 @@ export default function AiTradeQuoteWorkbench() {
   const [unitPrice, setUnitPrice] = useState('8.5')
   const [shippingCost, setShippingCost] = useState('120')
   const [otherCost, setOtherCost] = useState('0')
-  const [exchangeRate, setExchangeRate] = useState('0.1394')
+  const [exchangeRate, setExchangeRate] = useState('7.18')
   const [remark, setRemark] = useState('文化活动采购，预计需要独立礼盒包装。')
   const [description, setDescription] = useState<QuoteDescriptionResult | null>(null)
   const [calculation, setCalculation] = useState<QuoteCalculation | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  const clearGeneratedQuote = () => {
+    setDescription(null)
+    setCalculation(null)
+    setSaved(false)
+  }
 
   useLoad((params) => {
     if (params.product) setProductName(decodeURIComponent(params.product))
@@ -54,20 +60,28 @@ export default function AiTradeQuoteWorkbench() {
       unitPrice: toNumber(unitPrice),
       shippingCost: toNumber(shippingCost),
       otherCost: toNumber(otherCost),
-      exchangeRate: toNumber(exchangeRate, 1),
+      exchangeRate: toNumber(exchangeRate),
       remark: remark.trim()
     }),
     [productName, quantity, destination, currency, unitPrice, shippingCost, otherCost, exchangeRate, remark]
   )
 
-  const displayTotal = calculation ? calculation.totalCost * (input.exchangeRate ?? 1) : 0
+  const displayTotal =
+    calculation && input.exchangeRate && input.exchangeRate > 0
+      ? Number((calculation.totalCost * input.exchangeRate).toFixed(2))
+      : null
 
   const handleGenerate = async () => {
     if (!input.productName || input.quantity <= 0 || input.unitPrice <= 0) {
       Taro.showToast({title: '请填写商品、数量和单价', icon: 'none'})
       return
     }
+    if (!input.exchangeRate || input.exchangeRate <= 0) {
+      Taro.showToast({title: `请输入有效汇率：1 ${currency} = ? CNY`, icon: 'none'})
+      return
+    }
     setSaved(false)
+    setDescription(null)
     const calc = calculateQuote(input)
     setCalculation(calc)
     try {
@@ -82,6 +96,10 @@ export default function AiTradeQuoteWorkbench() {
   const handleSave = async () => {
     if (!user || !calculation || !description) {
       Taro.showToast({title: user ? '请先生成报价说明' : '请先登录后保存', icon: 'none'})
+      return
+    }
+    if (displayTotal === null) {
+      Taro.showToast({title: '请先填写有效汇率', icon: 'none'})
       return
     }
     setSaving(true)
@@ -130,6 +148,12 @@ export default function AiTradeQuoteWorkbench() {
         </Text>
       </View>
 
+      <View className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-4">
+        <Text className="text-xs text-amber-800 leading-relaxed">
+          课堂演示输入：当前单价、物流费和汇率均为示例值，非实时行情或实际交易报价；提交前需由业务人员核实。
+        </Text>
+      </View>
+
       <View className="bg-card rounded-[28px] p-5 border border-border border-opacity-10 mb-4">
         <Text className="text-lg text-foreground font-bold block mb-4">报价输入</Text>
         <View className="flex flex-col gap-3">
@@ -138,7 +162,10 @@ export default function AiTradeQuoteWorkbench() {
             <Input
               className="bg-muted rounded-xl px-3 py-2.5 text-sm"
               value={productName}
-              onInput={(e) => setProductName(e.detail.value)}
+              onInput={(e) => {
+                setProductName(e.detail.value)
+                clearGeneratedQuote()
+              }}
             />
           </View>
           <View className="flex flex-row gap-3">
@@ -148,7 +175,10 @@ export default function AiTradeQuoteWorkbench() {
                 type="number"
                 className="bg-muted rounded-xl px-3 py-2.5 text-sm"
                 value={quantity}
-                onInput={(e) => setQuantity(e.detail.value)}
+                onInput={(e) => {
+                  setQuantity(e.detail.value)
+                  clearGeneratedQuote()
+                }}
               />
             </View>
             <View className="flex-1">
@@ -157,7 +187,10 @@ export default function AiTradeQuoteWorkbench() {
                 mode="selector"
                 range={MARKETS}
                 value={MARKETS.indexOf(destination)}
-                onChange={(e) => setDestination(MARKETS[Number(e.detail.value)])}>
+                onChange={(e) => {
+                  setDestination(MARKETS[Number(e.detail.value)])
+                  clearGeneratedQuote()
+                }}>
                 <View className="bg-muted rounded-xl px-3 py-2.5">
                   <Text className="text-sm text-foreground">{destination}</Text>
                 </View>
@@ -166,21 +199,29 @@ export default function AiTradeQuoteWorkbench() {
           </View>
           <View className="flex flex-row gap-3">
             <View className="flex-1">
-              <Text className="text-xs text-muted-foreground block mb-1">单价（CNY）</Text>
+              <Text className="text-xs text-muted-foreground block mb-1">单价（{currency}）</Text>
               <Input
                 type="digit"
                 className="bg-muted rounded-xl px-3 py-2.5 text-sm"
                 value={unitPrice}
-                onInput={(e) => setUnitPrice(e.detail.value)}
+                onInput={(e) => {
+                  setUnitPrice(e.detail.value)
+                  clearGeneratedQuote()
+                }}
               />
             </View>
             <View className="flex-1">
-              <Text className="text-xs text-muted-foreground block mb-1">输出币种</Text>
+              <Text className="text-xs text-muted-foreground block mb-1">报价币种</Text>
               <Picker
                 mode="selector"
                 range={CURRENCIES}
                 value={CURRENCIES.indexOf(currency)}
-                onChange={(e) => setCurrency(CURRENCIES[Number(e.detail.value)])}>
+                onChange={(e) => {
+                  const nextCurrency = CURRENCIES[Number(e.detail.value)]
+                  setCurrency(nextCurrency)
+                  setExchangeRate(nextCurrency === 'CNY' ? '1' : '')
+                  clearGeneratedQuote()
+                }}>
                 <View className="bg-muted rounded-xl px-3 py-2.5">
                   <Text className="text-sm text-foreground">{currency}</Text>
                 </View>
@@ -189,32 +230,46 @@ export default function AiTradeQuoteWorkbench() {
           </View>
           <View className="flex flex-row gap-3">
             <View className="flex-1">
-              <Text className="text-xs text-muted-foreground block mb-1">物流成本（CNY）</Text>
+              <Text className="text-xs text-muted-foreground block mb-1">物流成本（{currency}）</Text>
               <Input
                 type="digit"
                 className="bg-muted rounded-xl px-3 py-2.5 text-sm"
                 value={shippingCost}
-                onInput={(e) => setShippingCost(e.detail.value)}
+                onInput={(e) => {
+                  setShippingCost(e.detail.value)
+                  clearGeneratedQuote()
+                }}
               />
             </View>
             <View className="flex-1">
-              <Text className="text-xs text-muted-foreground block mb-1">其他成本（CNY）</Text>
+              <Text className="text-xs text-muted-foreground block mb-1">其他成本（{currency}）</Text>
               <Input
                 type="digit"
                 className="bg-muted rounded-xl px-3 py-2.5 text-sm"
                 value={otherCost}
-                onInput={(e) => setOtherCost(e.detail.value)}
+                onInput={(e) => {
+                  setOtherCost(e.detail.value)
+                  clearGeneratedQuote()
+                }}
               />
             </View>
           </View>
           <View>
-            <Text className="text-xs text-muted-foreground block mb-1">汇率（1 CNY = {currency}，课堂手动输入）</Text>
+            <Text className="text-xs text-muted-foreground block mb-1">
+              汇率参考（1 {currency} = ? CNY，课堂手动输入）
+            </Text>
             <Input
               type="digit"
               className="bg-muted rounded-xl px-3 py-2.5 text-sm"
               value={exchangeRate}
-              onInput={(e) => setExchangeRate(e.detail.value)}
+              onInput={(e) => {
+                setExchangeRate(e.detail.value)
+                clearGeneratedQuote()
+              }}
             />
+            <Text className="text-[10px] text-muted-foreground mt-1">
+              示例汇率为手动课堂参考值，非实时行情；更换外币后请重新填写。
+            </Text>
           </View>
           <View>
             <Text className="text-xs text-muted-foreground block mb-1">业务备注</Text>
@@ -223,7 +278,10 @@ export default function AiTradeQuoteWorkbench() {
               value={remark}
               maxlength={300}
               style={{height: '80px'}}
-              onInput={(e) => setRemark(e.detail.value)}
+              onInput={(e) => {
+                setRemark(e.detail.value)
+                clearGeneratedQuote()
+              }}
             />
           </View>
         </View>
@@ -237,21 +295,26 @@ export default function AiTradeQuoteWorkbench() {
           <Text className="text-sm text-slate-300 block">程序计算结果</Text>
           <View className="flex flex-row items-end justify-between mt-2">
             <View>
-              <Text className="text-xs text-slate-400 block">商品金额</Text>
-              <Text className="text-xl text-white font-black">¥{calculation.productAmount.toFixed(2)}</Text>
-            </View>
-            <View>
-              <Text className="text-xs text-slate-400 block">总成本</Text>
-              <Text className="text-2xl text-emerald-300 font-black">¥{calculation.totalCost.toFixed(2)}</Text>
-            </View>
-            <View>
-              <Text className="text-xs text-slate-400 block">换算展示</Text>
+              <Text className="text-xs text-slate-400 block">商品金额（{currency}）</Text>
               <Text className="text-xl text-white font-black">
-                {currency} {displayTotal.toFixed(2)}
+                {currency} {calculation.productAmount.toFixed(2)}
               </Text>
             </View>
+            <View>
+              <Text className="text-xs text-slate-400 block">总成本（{currency}）</Text>
+              <Text className="text-2xl text-emerald-300 font-black">
+                {currency} {calculation.totalCost.toFixed(2)}
+              </Text>
+            </View>
+            <View>
+              <Text className="text-xs text-slate-400 block">折合人民币（CNY）</Text>
+              <Text className="text-xl text-white font-black">¥{displayTotal?.toFixed(2) ?? '--'}</Text>
+            </View>
           </View>
-          <Text className="text-[10px] text-slate-400 mt-3">基础数学由程序完成，汇率为用户手动输入，非实时汇率。</Text>
+          <Text className="text-[10px] text-slate-400 mt-3">
+            基础金额由程序计算；折合人民币 = 所选币种总额 × 手动汇率（1 {currency} = {exchangeRate || '待填写'}{' '}
+            CNY），非实时汇率。
+          </Text>
         </View>
       )}
 

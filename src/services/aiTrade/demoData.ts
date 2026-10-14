@@ -20,8 +20,8 @@ export const DEMO_PRODUCT: ProductIntlInput = {
 /** 演示目标市场 */
 export const DEMO_MARKET = '美国'
 
-/** 演示询盘（英文原询盘） */
-export const DEMO_INQUIRY = `Hello, I am interested in your Root Calligraphy wooden bookmarks. We would like to purchase 100 pieces for a cultural event. Could you please provide the wholesale price and estimated delivery time?`
+/** 演示询盘（英文原询盘：明确美国目的地，便于稳定演示询盘到报价闭环） */
+export const DEMO_INQUIRY = `Hello, I am based in the United States and interested in your Root Calligraphy wooden bookmarks. We would like to purchase 100 pieces for a cultural event. Could you please provide the wholesale price and estimated delivery time?`
 
 /** 演示报价参数（与询盘对应） */
 export const DEMO_QUOTE_INPUT = {

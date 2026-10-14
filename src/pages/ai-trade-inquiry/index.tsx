@@ -197,12 +197,14 @@ export default function AiTradeInquiry() {
 
   // 进入AI报价工作台（携带识别出的商品/数量/目的国）
   const handleGoQuote = () => {
-    const src = intent || analysis
-    const qtyMatch = (intent?.quantity || '').match(/\d+/)
+    const quantityText = intent?.quantity || analysis?.quantity || ''
+    const qtyMatch = quantityText.match(/[\d,]+/)
+    const product = intent?.product || analysis?.product || ''
+    const destination = intent?.destination || analysis?.destination || ''
     const params = [
-      `product=${encodeURIComponent(intent?.product || analysis?.product || '')}`,
-      `quantity=${qtyMatch ? qtyMatch[0] : ''}`,
-      `market=${encodeURIComponent((src as any)?.destination || analysis?.destination || '')}`
+      `product=${encodeURIComponent(product)}`,
+      `quantity=${qtyMatch ? qtyMatch[0].replace(/,/g, '') : ''}`,
+      `market=${encodeURIComponent(destination)}`
     ].join('&')
     Taro.navigateTo({url: `/pages/ai-trade-quote-workbench/index?${params}`})
   }

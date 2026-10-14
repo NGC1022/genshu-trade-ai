@@ -49,7 +49,39 @@ const OPERATIONS = [
   }
 ]
 
-const SHOWCASE_STEPS = ['选择商品', '读取数据', 'AI解释', '人工确认', '导出报告']
+const SHOWCASE_STEPS: {time: string; title: string; desc: string; url?: string; cta?: string}[] = [
+  {
+    time: '1分钟',
+    title: '说明问题与用户',
+    desc: '面向非遗文创商家：解决贸易数据口径分散、商品海外表达困难、询盘报价与合规审核脱节。'
+  },
+  {
+    time: '5分钟',
+    title: '数据证据与来源',
+    desc: '在看板区分跨境电商货物、服务贸易、数字化交付服务，并展开来源、年份与统计口径。',
+    url: '/pages/ai-trade-dashboard/index',
+    cta: '打开数字贸易看板'
+  },
+  {
+    time: '5分钟',
+    title: '美国与日本市场比较',
+    desc: '先加载根书书签课堂案例，再看消费者画像、评分与待核验风险。个人判断：先用50—100件验证点击、询盘、报价接受与复购；美国机会大但合规履约压力高，日本适合先测文化内容。',
+    url: '/pages/ai-trade-market/index',
+    cta: '打开海外市场分析'
+  },
+  {
+    time: '2分钟',
+    title: '演示询盘到报价',
+    desc: '使用100件美国文化活动询盘，展示AI识别后进入报价工作台；金额由程序计算，AI只整理商务说明。',
+    url: '/pages/ai-trade-inquiry/index',
+    cta: '打开询盘工作台'
+  },
+  {
+    time: '1分钟',
+    title: '说明人工复核边界',
+    desc: '价格、库存、物流、关税、认证与最终发布须由业务人员确认；AI结果默认是草稿或辅助判断。'
+  }
+]
 
 export default function AiTradeIndex() {
   const provider = getProviderInfo()
@@ -75,6 +107,15 @@ export default function AiTradeIndex() {
           <Text className="text-sm text-muted-foreground leading-relaxed block mt-3">
             从公开贸易数据到商品决策，把跨境业务中的资料整理、市场判断和沟通动作串成一条可复现的 AI 工作流。
           </Text>
+          <View className="rounded-2xl bg-muted/60 p-3 mt-3">
+            <Text className="text-xs text-primary font-bold block">服务对象</Text>
+            <Text className="text-xs text-foreground leading-relaxed block mt-1">
+              非遗文创商家、跨境业务运营人员与审核人员
+            </Text>
+            <Text className="text-xs text-muted-foreground leading-relaxed block mt-2">
+              关键痛点：公开数据口径容易混淆，商品资料难适配海外消费者，询盘、报价、合规和营销之间容易断裂。
+            </Text>
+          </View>
           <View className="flex flex-row gap-2 mt-5">
             <View
               className="flex-1 rounded-xl bg-primary flex items-center justify-center py-3"
@@ -120,6 +161,9 @@ export default function AiTradeIndex() {
             </View>
           ))}
         </View>
+        <Text className="text-[10px] text-emerald-100 leading-relaxed block mt-3">
+          业务闭环：商品资料 → 数据初筛 → 询盘与客户档案 → 程序计算报价 → AI整理说明 → 人工审核 → 跟进验证。
+        </Text>
         <Text className="text-[10px] text-slate-400 leading-relaxed block mt-3">
           系统不会把 AI 推测当成事实。价格、库存、HS 编码、税费和目的国法规必须在提交前由业务人员复核。
         </Text>
@@ -128,19 +172,30 @@ export default function AiTradeIndex() {
       <View className="bg-card rounded-[28px] p-5 border border-border border-opacity-10 mb-4">
         <View className="flex flex-row items-center justify-between mb-3">
           <View>
-            <Text className="text-lg text-foreground font-bold block">课堂展示主线</Text>
-            <Text className="text-xs text-muted-foreground mt-1">10—15分钟可完整跑通</Text>
+            <Text className="text-lg text-foreground font-bold block">课堂展示路线</Text>
+            <Text className="text-xs text-muted-foreground mt-1">约14分钟 · 可直接点击打开每个演示环节</Text>
           </View>
           <View className="i-mdi-presentation-play text-primary text-2xl" />
         </View>
-        <View className="flex flex-row items-center justify-between">
+        <View className="flex flex-col gap-2">
           {SHOWCASE_STEPS.map((step, index) => (
-            <View key={step} className="flex items-center">
-              <View
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${index === 0 ? 'bg-primary' : 'bg-primary/10'}`}>
-                <Text className={`text-xs font-black ${index === 0 ? 'text-white' : 'text-primary'}`}>{index + 1}</Text>
+            <View
+              key={step.title}
+              className={`rounded-2xl border border-border border-opacity-20 p-3 ${step.url ? 'bg-muted/30' : 'bg-background'}`}
+              onClick={step.url ? () => navigate(step.url as string) : undefined}>
+              <View className="flex flex-row items-start">
+                <View className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mr-2.5">
+                  <Text className="text-xs text-primary font-black">{index + 1}</Text>
+                </View>
+                <View className="flex-1 min-w-0">
+                  <View className="flex flex-row items-center justify-between">
+                    <Text className="text-sm text-foreground font-bold flex-1">{step.title}</Text>
+                    <Text className="text-[10px] text-muted-foreground ml-2">{step.time}</Text>
+                  </View>
+                  <Text className="text-xs text-muted-foreground leading-relaxed block mt-1">{step.desc}</Text>
+                  {step.cta && <Text className="text-xs text-primary font-bold block mt-2">{step.cta} →</Text>}
+                </View>
               </View>
-              <Text className="text-[10px] text-muted-foreground mt-1 text-center">{step}</Text>
             </View>
           ))}
         </View>
