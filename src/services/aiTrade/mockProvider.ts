@@ -358,10 +358,14 @@ async function generateInquiryReply(inquiryText: string, analysis: InquiryAnalys
     )
   }
 
+  const destinationFollowup =
+    analysis.destination === PENDING_CN
+      ? '\nCould you also confirm your destination country and preferred shipping method? This will help us provide an accurate quotation.'
+      : '\nWe will confirm the available shipping options after checking with our logistics partner.'
   const reply = [
     greeting,
     ...bodyLines,
-    '\nCould you also confirm your destination country and preferred shipping method? This will help us provide an accurate quotation.',
+    destinationFollowup,
     '\nWe look forward to your reply and hope to support your cultural event.',
     '\nBest regards,',
     'Root Calligraphy Team'
