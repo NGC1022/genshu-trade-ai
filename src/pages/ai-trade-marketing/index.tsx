@@ -8,7 +8,7 @@ import {useCallback, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {createAiTradeRecord, getSKUList, updateAiTradeRecord} from '@/db/api'
 import type {SKU} from '@/db/types'
-import {AI_DISCLAIMER, AiServiceError, generateMarketingContent, type MarketingContentResult} from '@/services/aiTrade'
+import {AI_DISCLAIMER, AiServiceError, generateMarketingContent, getProviderInfo, type MarketingContentResult} from '@/services/aiTrade'
 import {createSocialLink, submitSocialPost, validateSocialPost} from '@/services/social/ayrshare'
 
 const MARKETS = ['美国', '日本', '新加坡', '韩国', '英国', '德国']
@@ -94,7 +94,7 @@ export default function AiTradeMarketing() {
       ai_result: {...content},
       status: 'draft',
       review_status: 'pending',
-      source: 'mock',
+      source: getProviderInfo().isMock ? 'mock' : 'realtime',
       is_demo: sku.name.includes('根书木质书签')
     })
     Taro.hideLoading()
