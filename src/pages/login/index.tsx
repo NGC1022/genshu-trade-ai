@@ -2,10 +2,13 @@ import {Button, Input, Text, View} from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import {useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
+import {useLanguage} from '@/hooks/useLanguage'
+import {t} from '@/utils/i18n'
 
 const STORAGE_KEY_REDIRECT_PATH = 'loginRedirectPath'
 
 export default function Login() {
+  useLanguage()
   const {signInWithUsername, signUpWithUsername, signInWithWechat} = useAuth()
   const [isLogin, setIsLogin] = useState(true)
   const [username, setUsername] = useState('')
@@ -15,18 +18,18 @@ export default function Login() {
 
   const handleSubmit = async () => {
     if (!username || !password) {
-      Taro.showToast({title: '请输入用户名和密码', icon: 'none'})
+      Taro.showToast({title: t('enter_credentials'), icon: 'none'})
       return
     }
 
     if (!agreed) {
-      Taro.showToast({title: '请阅读并同意用户协议和隐私政策', icon: 'none'})
+      Taro.showToast({title: t('agree_required'), icon: 'none'})
       return
     }
 
     // 验证用户名格式
     if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      Taro.showToast({title: '用户名只能包含字母、数字和下划线', icon: 'none'})
+      Taro.showToast({title: t('username_format'), icon: 'none'})
       return
     }
 
@@ -42,7 +45,7 @@ export default function Login() {
         return
       }
 
-      Taro.showToast({title: isLogin ? '登录成功' : '注册成功', icon: 'success'})
+      Taro.showToast({title: isLogin ? t('login_success') : t('signup_success'), icon: 'success'})
 
       // 登录成功后跳转
       setTimeout(() => {
@@ -73,7 +76,7 @@ export default function Login() {
 
   const handleWechatLogin = async () => {
     if (!agreed) {
-      Taro.showToast({title: '请阅读并同意用户协议和隐私政策', icon: 'none'})
+      Taro.showToast({title: t('agree_required'), icon: 'none'})
       return
     }
 
@@ -87,7 +90,7 @@ export default function Login() {
         return
       }
 
-      Taro.showToast({title: '登录成功', icon: 'success'})
+      Taro.showToast({title: t('login_success'), icon: 'success'})
 
       setTimeout(() => {
         const redirectPath = Taro.getStorageSync(STORAGE_KEY_REDIRECT_PATH)
@@ -124,7 +127,7 @@ export default function Login() {
             <Text className="text-4xl text-white">根</Text>
           </View>
           <Text className="text-2xl font-bold text-foreground mb-2">根书文创</Text>
-          <Text className="text-base text-muted-foreground">传承文化 · 创新未来</Text>
+          <Text className="text-base text-muted-foreground">{t('brand_tagline')}</Text>
         </View>
 
         {/* 登录表单 */}
@@ -133,21 +136,25 @@ export default function Login() {
             <View
               className={`flex-1 text-center py-2 ${isLogin ? 'border-b-2 border-primary' : ''}`}
               onClick={() => setIsLogin(true)}>
-              <Text className={`text-base ${isLogin ? 'text-primary font-bold' : 'text-muted-foreground'}`}>登录</Text>
+              <Text className={`text-base ${isLogin ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+                {t('sign_in_title')}
+              </Text>
             </View>
             <View
               className={`flex-1 text-center py-2 ${!isLogin ? 'border-b-2 border-primary' : ''}`}
               onClick={() => setIsLogin(false)}>
-              <Text className={`text-base ${!isLogin ? 'text-primary font-bold' : 'text-muted-foreground'}`}>注册</Text>
+              <Text className={`text-base ${!isLogin ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+                {t('sign_up_title')}
+              </Text>
             </View>
           </View>
 
           <View className="mb-4">
-            <Text className="text-base text-foreground mb-2">用户名（最多15个字符）</Text>
+            <Text className="text-base text-foreground mb-2">{t('username_limit')}</Text>
             <View className="bg-input rounded-lg border border-border px-4 py-3">
               <Input
                 className="w-full text-foreground"
-                placeholder="请输入用户名"
+                placeholder={t('username_placeholder')}
                 value={username}
                 maxlength={15}
                 onInput={(e) => setUsername(e.detail.value)}
@@ -156,12 +163,12 @@ export default function Login() {
           </View>
 
           <View className="mb-6">
-            <Text className="text-base text-foreground mb-2">密码</Text>
+            <Text className="text-base text-foreground mb-2">{t('password')}</Text>
             <View className="bg-input rounded-lg border border-border px-4 py-3">
               <Input
                 className="w-full text-foreground"
                 password
-                placeholder="请输入密码"
+                placeholder={t('password_placeholder')}
                 value={password}
                 onInput={(e) => setPassword(e.detail.value)}
               />
@@ -173,14 +180,14 @@ export default function Login() {
               className={`w-5 h-5 rounded border-2 mr-2 flex items-center justify-center ${agreed ? 'bg-primary border-primary' : 'border-border'}`}>
               {agreed && <View className="i-mdi-check text-white text-base" />}
             </View>
-            <Text className="text-base text-muted-foreground">我已阅读并同意《用户协议》和《隐私政策》</Text>
+            <Text className="text-base text-muted-foreground">{t('agree_terms')}</Text>
           </View>
 
           <Button
             className="w-full bg-gradient-primary text-white rounded-lg py-3 text-base font-bold break-keep"
             onClick={handleSubmit}
             loading={loading}>
-            {isLogin ? '登录' : '注册'}
+            {isLogin ? t('sign_in_title') : t('sign_up_title')}
           </Button>
 
           <View className="mt-4">
@@ -188,16 +195,12 @@ export default function Login() {
               className="w-full bg-secondary text-foreground rounded-lg py-3 text-base font-bold break-keep"
               onClick={handleWechatLogin}
               loading={loading}>
-              微信快捷登录
+              {t('wechat_login')}
             </Button>
           </View>
 
           <View className="mt-4 rounded-lg bg-muted/60 px-3 py-2">
-            <Text className="block text-xs text-muted-foreground leading-relaxed">
-              H5 预览账号：demo / demo123
-              {'\n'}商家演示账号：merchant / merchant123
-              {'\n'}管理员演示账号：admin / admin123
-            </Text>
+            <Text className="block text-xs text-muted-foreground leading-relaxed">{t('demo_account_info')}</Text>
           </View>
         </View>
       </View>

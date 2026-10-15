@@ -4,22 +4,30 @@ import {useCallback, useMemo, useState} from 'react'
 import {DEMO_CATALOG} from '@/data/demoCatalog'
 import {getSKUList} from '@/db/api'
 import type {SKU} from '@/db/types'
+import {useLanguage} from '@/hooks/useLanguage'
+import {t} from '@/utils/i18n'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 
 type SortMode = 'featured' | 'sales' | 'monthly' | 'price_desc' | 'price_asc'
 
-const SORT_OPTIONS: Array<{key: SortMode; label: string}> = [
-  {key: 'featured', label: '综合推荐'},
-  {key: 'sales', label: '总销量高→低'},
-  {key: 'monthly', label: '月销量高→低'},
-  {key: 'price_desc', label: '价格高→低'},
-  {key: 'price_asc', label: '价格低→高'}
+const SORT_OPTIONS: Array<{key: SortMode; labelKey: string}> = [
+  {key: 'featured', labelKey: 'recommended'},
+  {key: 'sales', labelKey: 'sales_high_low'},
+  {key: 'monthly', labelKey: 'monthly_high_low'},
+  {key: 'price_desc', labelKey: 'price_high_low'},
+  {key: 'price_asc', labelKey: 'price_low_high'}
 ]
 
 const monthlySales = (product: SKU) => Number(product.monthly_sold ?? Math.round(product.stock_sold * 0.35))
 const totalSales = (product: SKU) => Number(product.stock_sold || 0)
 
 export default function Products() {
+  const language = useLanguage()
+  const displayProductName = (product: SKU) => {
+    if (language !== 'en') return product.name
+    const englishName = (product as SKU & {name_en?: string}).name_en
+    return englishName?.trim() || (/['"㐀-鿿]/.test(product.name) ? t('english_name_missing') : product.name)
+  }
   // 先渲染本地目录，避免远端数据库为空、未授权或网络较慢时出现整页空白。
   const [allProducts, setAllProducts] = useState<SKU[]>(DEMO_CATALOG)
   const [category, setCategory] = useState<string>('')
@@ -64,11 +72,9 @@ export default function Products() {
     <View className="min-h-screen bg-gradient-subtle preview-products-page">
       <View className="mx-auto max-w-[1180px] px-4 py-5 md:px-8 md:py-8">
         <View className="mb-5">
-          <Text className="text-xs tracking-[2px] text-primary font-black">ROOT CULTURE / SHOP</Text>
-          <Text className="block text-2xl md:text-3xl text-foreground font-black mt-1">文创商品</Text>
-          <Text className="block text-sm text-muted-foreground mt-2">
-            按价格、销量和商品关键词找到适合自用或文化礼赠的作品。
-          </Text>
+          <Text className="text-xs tracking-[2px] text-primary font-black">{t('shop_eyebrow')}</Text>
+          <Text className="block text-2xl md:text-3xl text-foreground font-black mt-1">{t('products')}</Text>
+          <Text className="block text-sm text-muted-foreground mt-2">{t('products_intro')}</Text>
         </View>
 
         <View className="bg-card rounded-3xl border border-border border-opacity-10 shadow-card p-4 mb-4">
@@ -77,20 +83,20 @@ export default function Products() {
             <Input
               value={keyword}
               onInput={(event) => setKeyword(event.detail.value)}
-              placeholder="搜索商品名称、SKU、材质或用途"
+              placeholder={t('search_products')}
               className="flex-1 text-sm text-foreground"
             />
             {keyword && (
               <Text className="text-xs text-primary font-bold" onClick={() => setKeyword('')}>
-                清除
+                {t('clear')}
               </Text>
             )}
           </View>
           <View className="flex flex-row gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide">
             {[
-              {key: '', label: '全部商品'},
-              {key: 'regular', label: '平价文创'},
-              {key: 'premium', label: '高端文创'}
+              {key: '', labelKey: 'all_products'},
+              {key: 'regular', labelKey: 'affordable_products'},
+              {key: 'premium', labelKey: 'premium_products'}
             ].map((item) => (
               <View
                 key={item.key}
@@ -98,7 +104,7 @@ export default function Products() {
                 onClick={() => setCategory(item.key)}>
                 <Text
                   className={`text-xs font-bold ${category === item.key ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
-                  {item.label}
+                  {t(item.labelKey)}
                 </Text>
               </View>
             ))}
@@ -111,21 +117,23 @@ export default function Products() {
                 onClick={() => setSortMode(item.key)}>
                 <Text
                   className={`text-xs font-bold ${sortMode === item.key ? 'text-primary' : 'text-muted-foreground'}`}>
-                  {item.label}
+                  {t(item.labelKey)}
                 </Text>
               </View>
             ))}
           </View>
           <View className="flex flex-row items-center justify-between mt-3">
-            <Text className="text-xs text-muted-foreground">共 {filteredProducts.length} 件商品</Text>
-            <Text className="text-xs text-muted-foreground">销量数据来自已确认订单</Text>
+            <Text className="text-xs text-muted-foreground">
+              {t('products_count', {count: filteredProducts.length})}
+            </Text>
+            <Text className="text-xs text-muted-foreground">{t('sales_confirmed')}</Text>
           </View>
         </View>
 
         {filteredProducts.length === 0 ? (
           <View className="bg-card rounded-3xl p-10 flex items-center justify-center border border-border border-opacity-10">
             <View className="i-mdi-package-variant-closed-remove text-4xl text-muted-foreground/40 mb-3" />
-            <Text className="text-sm text-muted-foreground">没有找到匹配的商品</Text>
+            <Text className="text-sm text-muted-foreground">{t('no_products')}</Text>
           </View>
         ) : (
           <View className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5 pb-10 product-grid">
@@ -143,23 +151,30 @@ export default function Products() {
                   />
                   <View className="absolute top-2 left-2 rounded-full bg-black/65 px-2 py-1">
                     <Text className="text-[10px] text-white font-bold">
-                      {product.category === 'premium' ? '高端' : '平价'}
+                      {product.category === 'premium' ? t('premium') : t('affordable')}
                     </Text>
                   </View>
                 </View>
                 <View className="p-3.5">
                   <Text className="text-sm md:text-base font-bold text-foreground mb-2 line-clamp-1 leading-snug block">
-                    {product.name}
+                    {displayProductName(product)}
                   </Text>
                   <View className="flex items-center justify-between mb-2">
-                    <Text className="text-xl font-black text-primary">¥{Number(product.price).toFixed(2)}</Text>
+                    <Text className="text-xl font-black text-primary">
+                      {language === 'en' ? 'CNY ' : '¥'}
+                      {Number(product.price).toFixed(2)}
+                    </Text>
                     <Text className="text-[10px] text-muted-foreground">
-                      {product.stock_available > 0 ? '有库存' : '可预订'}
+                      {product.stock_available > 0 ? t('in_stock') : t('preorder')}
                     </Text>
                   </View>
                   <View className="flex flex-row items-center justify-between border-t border-border border-opacity-20 pt-2">
-                    <Text className="text-[10px] text-muted-foreground">月销 {monthlySales(product)}</Text>
-                    <Text className="text-[10px] text-muted-foreground">总销 {totalSales(product)}</Text>
+                    <Text className="text-[10px] text-muted-foreground">
+                      {t('monthly_sales', {count: monthlySales(product)})}
+                    </Text>
+                    <Text className="text-[10px] text-muted-foreground">
+                      {t('total_sales', {count: totalSales(product)})}
+                    </Text>
                   </View>
                 </View>
               </View>

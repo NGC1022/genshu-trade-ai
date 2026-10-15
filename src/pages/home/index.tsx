@@ -4,6 +4,7 @@ import {useCallback, useState} from 'react'
 import {DEMO_CATALOG} from '@/data/demoCatalog'
 import {getParkAnnouncements, getSKUList, getTicketTypeList} from '@/db/api'
 import type {SKU, TicketType} from '@/db/types'
+import {useLanguage} from '@/hooks/useLanguage'
 import {t} from '@/utils/i18n'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 
@@ -16,6 +17,12 @@ interface Announcement {
 }
 
 export default function Home() {
+  const language = useLanguage()
+  const localizedContent = (source: string, english?: string) => {
+    if (language !== 'en') return source
+    if (english?.trim()) return english.trim()
+    return /[\u3400-\u9fff]/.test(source) ? t('name_translation_unavailable') : source
+  }
   const [featuredProducts, setFeaturedProducts] = useState<SKU[]>(DEMO_CATALOG.slice(0, 4))
   const [tickets, setTickets] = useState<TicketType[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
@@ -30,25 +37,25 @@ export default function Home() {
 
   const otherApps = [
     {
-      name: '智慧景区',
+      name: t('app_smart_park'),
       icon: 'i-mdi-map-marker-radius',
       color: 'bg-blue-500',
       appId: 'wx1234567890'
     },
     {
-      name: '景区导览',
+      name: t('app_park_guide'),
       icon: 'i-mdi-account-voice',
       color: 'bg-green-500',
       appId: 'wx0987654321'
     },
     {
-      name: '餐饮服务',
+      name: t('app_dining'),
       icon: 'i-mdi-food-fork-drink',
       color: 'bg-orange-500',
       appId: 'wx1122334455'
     },
     {
-      name: '周边住宿',
+      name: t('app_nearby_stays'),
       icon: 'i-mdi-home-city',
       color: 'bg-purple-500',
       appId: 'wx6677889900'
@@ -95,8 +102,11 @@ export default function Home() {
     const parkLocation = {
       latitude: 39.7,
       longitude: 116.0,
-      name: '根书文创园',
-      address: '北京市房山区青龙湖镇根书文创园'
+      name: language === 'en' ? 'Root Culture Park' : '根书文创园',
+      address:
+        language === 'en'
+          ? 'Genshu Root Culture Park, Qinglonghu, Fangshan District, Beijing'
+          : '北京市房山区青龙湖镇根书文创园'
     }
 
     // 景区导览和周边住宿使用地图定位
@@ -110,7 +120,7 @@ export default function Home() {
         scale: 15
       }).catch(() => {
         Taro.showToast({
-          title: '打开地图失败，请稍后重试',
+          title: t('ticket_failure'),
           icon: 'none'
         })
       })
@@ -119,19 +129,19 @@ export default function Home() {
       Taro.openLocation({
         latitude: parkLocation.latitude,
         longitude: parkLocation.longitude,
-        name: '根书文创园周边',
+        name: language === 'en' ? 'Near Root Culture Park' : '根书文创园周边',
         address: parkLocation.address,
         scale: 13
       }).catch(() => {
         Taro.showToast({
-          title: '打开地图失败，请稍后重试',
+          title: t('ticket_failure'),
           icon: 'none'
         })
       })
     } else {
       // 其他小程序跳转
       Taro.showToast({
-        title: '此功能在生产环境下将跳转至对应小程序',
+        title: t('preview_feature'),
         icon: 'none'
       })
     }
@@ -156,9 +166,9 @@ export default function Home() {
                 {index === bannerImages.length - 1 && (
                   <View className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center p-6 text-center">
                     <View className="bg-white bg-opacity-10 backdrop-blur-sm p-4 rounded-xl border border-white border-opacity-30">
-                      <Text className="text-white text-xl font-bold block mb-4">根书文创小程序</Text>
-                      <Text className="text-white text-base opacity-90 block">提供门票预订、文创购买、个性定制</Text>
-                      <Text className="text-white text-base opacity-90 block mt-2">等一站式文旅服务</Text>
+                      <Text className="text-white text-xl font-bold block mb-4">{t('home_banner_title')}</Text>
+                      <Text className="text-white text-base opacity-90 block">{t('home_banner_line1')}</Text>
+                      <Text className="text-white text-base opacity-90 block mt-2">{t('home_banner_line2')}</Text>
                     </View>
                   </View>
                 )}
@@ -179,7 +189,7 @@ export default function Home() {
                 <View
                   className="flex items-center active:opacity-60 transition-opacity"
                   onClick={() => Taro.navigateTo({url: '/pages/announcements/index'})}>
-                  <Text className="text-base text-muted-foreground mr-1">更多</Text>
+                  <Text className="text-base text-muted-foreground mr-1">{t('more')}</Text>
                   <View className="i-mdi-chevron-right text-muted-foreground text-xl" />
                 </View>
               </View>
@@ -198,10 +208,12 @@ export default function Home() {
                         <View className="i-mdi-bullhorn text-xl text-white" />
                       </View>
                       <View className="flex-1 flex flex-col space-y-2">
-                        <Text className="text-lg font-bold text-foreground">{announcement.title}</Text>
+                        <Text className="text-lg font-bold text-foreground">
+                          {localizedContent(announcement.title, (announcement as any).title_en)}
+                        </Text>
 
                         <Text className="text-base text-muted-foreground line-clamp-2 leading-relaxed opacity-80">
-                          {announcement.content}
+                          {localizedContent(announcement.content, (announcement as any).content_en)}
                         </Text>
                       </View>
                       <View className="i-mdi-chevron-right text-2xl text-muted-foreground ml-2" />
@@ -244,7 +256,7 @@ export default function Home() {
               <View className="w-16 h-16 bg-gradient-primary rounded-[20px] flex items-center justify-center mb-2 shadow-elegant transition-all">
                 <View className="i-mdi-crown text-3xl text-white" />
               </View>
-              <Text className="text-base text-accent font-bold tracking-tight">会员中心</Text>
+              <Text className="text-base text-accent font-bold tracking-tight">{t('member_center')}</Text>
             </View>
           </View>
 
@@ -271,10 +283,10 @@ export default function Home() {
                   <View className="bg-white/20 self-start px-2 py-0.5 rounded mb-2 inline-block">
                     <Text className="text-xs text-white font-black uppercase tracking-widest">New Arrival</Text>
                   </View>
-                  <Text className="text-2xl font-black text-white block mb-2 tracking-tight">根宝IP周边新品上市</Text>
-                  <Text className="text-base text-white/80 leading-relaxed">
-                    钥匙扣、徽章、抱枕、帆布袋现已开启发售，快来带根宝回家吧！
+                  <Text className="text-2xl font-black text-white block mb-2 tracking-tight">
+                    {t('campaign_title')}
                   </Text>
+                  <Text className="text-base text-white/80 leading-relaxed">{t('campaign_body')}</Text>
                 </View>
                 <View className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center shadow-sm backdrop-blur-sm">
                   <View className="i-mdi-gift-outline text-4xl text-white" />
@@ -295,9 +307,14 @@ export default function Home() {
                     lazyLoad={index > 1}
                   />
                   <View className="p-4">
-                    <Text className="text-base font-bold text-foreground mb-1.5 line-clamp-1">{product.name}</Text>
+                    <Text className="text-base font-bold text-foreground mb-1.5 line-clamp-1">
+                      {localizedContent(product.name, product.name_en)}
+                    </Text>
                     <View className="flex items-center justify-between">
-                      <Text className="text-xl font-black text-primary">¥{product.price}</Text>
+                      <Text className="text-xl font-black text-primary">
+                        {language === 'en' ? 'CNY ' : '¥'}
+                        {product.price}
+                      </Text>
                       {product.category === 'premium' && (
                         <View className="bg-secondary/20 px-2 py-0.5 rounded-lg border border-secondary/30">
                           <Text className="text-xs text-accent font-bold uppercase">{t('premium')}</Text>
@@ -321,13 +338,13 @@ export default function Home() {
                   <Text className="text-xs text-primary font-black uppercase tracking-widest">Digital IP</Text>
                 </View>
                 <Text className="text-2xl font-black text-foreground block mb-2 tracking-tight">
-                  根书拟人化：数字IP专区
+                  {t('digital_ip_title')}
                 </Text>
-                <Text className="text-base text-muted-foreground leading-relaxed">
-                  探索古老根书与现代数字艺术的奇妙碰撞，见证传统文化的焕新升级。
-                </Text>
+                <Text className="text-base text-muted-foreground leading-relaxed">{t('digital_ip_intro')}</Text>
                 <View className="flex flex-row items-center mt-4">
-                  <Text className="text-base text-primary font-black uppercase tracking-widest mr-1">立即开启探索</Text>
+                  <Text className="text-base text-primary font-black uppercase tracking-widest mr-1">
+                    {t('explore_now')}
+                  </Text>
                   <View className="i-mdi-arrow-right text-primary text-xl" />
                 </View>
               </View>
@@ -349,13 +366,13 @@ export default function Home() {
                     AI Trade Assistant
                   </Text>
                 </View>
-                <Text className="text-2xl font-black text-foreground block mb-2 tracking-tight">AI跨境贸易助手</Text>
-                <Text className="text-base text-muted-foreground leading-relaxed">
-                  商品国际化、海外市场分析、跨境询盘与智能报价，非遗文创出海的全流程AI辅助。
+                <Text className="text-2xl font-black text-foreground block mb-2 tracking-tight">
+                  {t('ai_trade_assistant')}
                 </Text>
+                <Text className="text-base text-muted-foreground leading-relaxed">{t('ai_trade_intro')}</Text>
                 <View className="flex flex-row items-center mt-4">
                   <Text className="text-base text-secondary font-black uppercase tracking-widest mr-1">
-                    立即开启探索
+                    {t('explore_now')}
                   </Text>
                   <View className="i-mdi-arrow-right text-secondary text-xl" />
                 </View>
@@ -407,20 +424,26 @@ export default function Home() {
                 onClick={() => navigateToTicketDetail(ticket.id)}>
                 <View className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl" />
                 <View className="flex items-start justify-between mb-3 relative z-10">
-                  <Text className="text-lg font-bold text-foreground flex-1 leading-snug">{ticket.name}</Text>
+                  <Text className="text-lg font-bold text-foreground flex-1 leading-snug">
+                    {localizedContent(ticket.name, (ticket as any).name_en)}
+                  </Text>
                   <View className="bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
-                    <Text className="text-xs text-primary font-bold">限时优惠</Text>
+                    <Text className="text-xs text-primary font-bold">{t('limited_offer')}</Text>
                   </View>
                 </View>
                 <Text className="text-base text-muted-foreground mb-4 line-clamp-2 leading-relaxed relative z-10 opacity-80">
-                  {ticket.description}
+                  {localizedContent(ticket.description, (ticket as any).description_en)}
                 </Text>
                 <View className="flex items-center justify-between relative z-10">
                   <View className="flex items-baseline">
-                    <Text className="text-2xl font-black text-primary mr-2">¥{ticket.price}</Text>
+                    <Text className="text-2xl font-black text-primary mr-2">
+                      {language === 'en' ? 'CNY ' : '¥'}
+                      {ticket.price}
+                    </Text>
                     {ticket.original_price && (
                       <Text className="text-base text-muted-foreground line-through opacity-60">
-                        ¥{ticket.original_price}
+                        {language === 'en' ? 'CNY ' : '¥'}
+                        {ticket.original_price}
                       </Text>
                     )}
                   </View>

@@ -6,6 +6,7 @@
 //    在 provider.ts 的 getAiTradeProvider() 切换即可，页面与 Service 入口零改动
 // 4. Mock 输出遵守同一合规规则：不虚构事实，缺失信息统一"待确认"
 
+import {translateText} from '@/utils/translate'
 import {ensureStr, ensureStrArray, PENDING_CN} from './parser'
 import {
   PROMPT_INQUIRY_ANALYSIS,
@@ -69,80 +70,110 @@ function assertInput(cond: boolean, msg: string) {
 }
 
 // ---------- 功能1：AI商品国际化（Mock规则引擎） ----------
+const PENDING_EN = 'To be confirmed — add verified English product information.'
+const CJK_PATTERN = /[\u3400-\u9fff]/
+const KNOWN_ENGLISH_TRANSLATIONS: Record<string, string> = {
+  根书: 'Root Calligraphy',
+  根书书签套装: 'Root Calligraphy Bookmark Set',
+  根书木质书签: 'Root Calligraphy Bookmark Set',
+  木质: 'wooden',
+  书签: 'bookmarks',
+  套装: 'set',
+  天然木材: 'natural wood',
+  徽章: 'badge',
+  钥匙扣: 'keychain',
+  抱枕: 'cushion',
+  帆布袋: 'canvas bag',
+  明信片: 'postcards',
+  冰箱贴: 'fridge magnet',
+  印章: 'seal',
+  摆件: 'ornament',
+  字画: 'calligraphy artwork',
+  '5枚装': 'set of 5',
+  四件套: 'set of 4',
+  非遗: 'intangible cultural heritage',
+  手工制作: 'handcrafted',
+  大师: 'master artisan',
+  精选: 'selected',
+  根宝: 'Genbao',
+  '精美根书书签套装，5枚装。精选天然木材，采用四川非遗根书工艺手工制作，将树根的自然形态与传统书法艺术融为一体，每一枚书签都是独特的艺术品。':
+    'A beautifully crafted set of five Root Calligraphy bookmarks. Made from selected natural wood using Sichuan intangible cultural heritage techniques, each bookmark combines the natural form of tree roots with traditional calligraphy and is one of a kind.',
+  '根书是四川省非物质文化遗产，以树根为笔、自然为师，通过选根、蒸煮、去皮、打磨、拼接等十余道工序，将天然树根创作成书法作品。':
+    'Root Calligraphy is an intangible cultural heritage art from Sichuan, China. Artisans treat tree roots as their brush and nature as their teacher, transforming natural roots into calligraphy through more than ten steps, including root selection, steaming, peeling, polishing, and assembly.'
+}
+
+function containsCjk(value: string) {
+  return CJK_PATTERN.test(value)
+}
+
+async function translateToEnglish(value: string | undefined): Promise<string> {
+  const source = ensureStr(value, '')
+  if (!source) return PENDING_EN
+  if (!containsCjk(source)) return source
+  const exact = KNOWN_ENGLISH_TRANSLATIONS[source]
+  if (exact) return exact
+
+  try {
+    const translated = await translateText(source, 'zh', 'en')
+    if (translated.trim() && !containsCjk(translated)) return translated.trim()
+  } catch {
+    // Use only reviewed phrase translations below when the translation service is unavailable.
+  }
+
+  let mapped = source
+  for (const [zh, en] of Object.entries(KNOWN_ENGLISH_TRANSLATIONS)) {
+    if (zh.length < 2 || zh.length > 8) continue
+    mapped = mapped.replace(new RegExp(zh, 'g'), en)
+  }
+  return containsCjk(mapped) ? PENDING_EN : mapped
+}
+
 async function generateProductInternationalization(input: ProductIntlInput): Promise<ProductIntlResult> {
   assertInput(!!input && !!input.name, '商品数据缺失：请先选择商品')
   await mockDelay()
 
-  const material = ensureStr(input.material, '')
-  const spec = ensureStr(input.specification, '')
-  const culture = ensureStr(input.culturalBackground, '')
-  const desc = ensureStr(input.description, '')
+  const [nameEn, descriptionEn, cultureEn, materialEn, specificationEn] = await Promise.all([
+    translateToEnglish(input.name),
+    translateToEnglish(input.description),
+    translateToEnglish(input.culturalBackground),
+    translateToEnglish(input.material),
+    translateToEnglish(input.specification)
+  ])
 
-  // 简易中→英对照（仅演示商品覆盖到的词汇；未匹配时兜底直译说明）
-  const zhEnMap: Record<string, string> = {
-    根书: 'Root Calligraphy',
-    木质: 'wooden',
-    书签: 'bookmarks',
-    套装: 'set',
-    天然木材: 'natural wood',
-    徽章: 'badge',
-    钥匙扣: 'keychain',
-    抱枕: 'cushion',
-    帆布袋: 'canvas bag',
-    明信片: 'postcards',
-    冰箱贴: 'fridge magnet',
-    印章: 'seal',
-    摆件: 'ornament',
-    字画: 'calligraphy artwork',
-    '5枚装': 'set of 5',
-    四件套: 'set of 4',
-    非遗: 'intangible cultural heritage',
-    手工制作: 'handcrafted',
-    大师: 'master',
-    精选: 'selected',
-    根宝: 'Genbao'
-  }
-  const translateName = (zh: string) => {
-    let en = zh
-    for (const [zhKey, enVal] of Object.entries(zhEnMap)) {
-      en = en.replace(new RegExp(zhKey, 'g'), enVal)
-    }
-    return en
-  }
-
-  const titleEn = material
-    ? `${translateName(input.name)} (${material === '天然木材' ? 'natural wood' : PENDING_CN})`
-    : translateName(input.name)
-
-  const features: string[] = ['Handcrafted using traditional Root Calligraphy (Gen Shu) techniques']
-  if (material) features.push(`Made of ${translateName(material)}`)
-  if (spec) features.push(`Sold as ${translateName(spec)}`)
-  if (culture) features.push('Carries the cultural story of Sichuan intangible cultural heritage')
+  const title = materialEn === PENDING_EN ? nameEn : `${nameEn} (${materialEn})`
+  const description =
+    descriptionEn === PENDING_EN
+      ? PENDING_EN
+      : `Traditional Sichuan Root Calligraphy craftsmanship meets everyday reading. ${descriptionEn}`
+  const features = ['Handcrafted using traditional Root Calligraphy (Gen Shu) techniques']
+  if (materialEn !== PENDING_EN) features.push(`Made of ${materialEn}`)
+  if (specificationEn !== PENDING_EN) features.push(`Sold as ${specificationEn}`)
+  if (cultureEn !== PENDING_EN)
+    features.push('Inspired by the cultural heritage described in the source product information')
   if (input.price) features.push(`Reference unit price: CNY ${input.price.toFixed(2)}`)
 
   const keywords = [
     'Root Calligraphy',
-    'wooden bookmark',
-    ...(!material || material === '天然木材' ? ['natural wood'] : [translateName(material)]),
-    ...(spec ? [translateName(spec)] : []),
+    'handcrafted cultural gift',
+    ...(materialEn !== PENDING_EN ? [materialEn] : []),
+    ...(specificationEn !== PENDING_EN ? [specificationEn] : []),
     'Chinese intangible cultural heritage',
     'handmade gift'
-  ]
+  ].filter((item, index, all) => all.indexOf(item) === index)
 
   return {
-    title: titleEn,
-    description: desc
-      ? `Traditional Sichuan Root Calligraphy craftsmanship meets everyday reading. ${translateName(desc)} ${culture ? 'Each piece celebrates intangible cultural heritage artistry.' : ''}`.trim()
-      : PENDING_CN,
-    features: features.length > 0 ? features : [PENDING_CN],
-    keywords: keywords.slice(0, 8),
-    cultural_background: culture
-      ? `Root Calligraphy (Gen Shu) is a Sichuan intangible cultural heritage art. ${translateName(culture)} It transforms natural tree roots into calligraphy artworks through more than ten handcraft steps including root selection, boiling, peeling, polishing and assembling.`
-      : PENDING_CN,
-    material: material ? translateName(material) : PENDING_CN,
-    specification: spec ? translateName(spec) : PENDING_CN,
+    title: containsCjk(title) ? PENDING_EN : title,
+    description: containsCjk(description) ? PENDING_EN : description,
+    features: features.map((item) => (containsCjk(item) ? PENDING_EN : item)),
+    keywords: keywords.map((item) => (containsCjk(item) ? PENDING_EN : item)),
+    cultural_background:
+      cultureEn === PENDING_EN
+        ? PENDING_EN
+        : `Root Calligraphy (Gen Shu) is a Sichuan intangible cultural heritage art. ${cultureEn}`,
+    material: materialEn,
+    specification: specificationEn,
     notice:
-      'This product information is generated for demonstration. No certifications, sales volume, rankings or logistics commitments are included; all facts are based on the provided product data only. Details to be confirmed by the seller.'
+      'This product information is generated for demonstration. No certifications, sales volume, rankings or logistics commitments are included; factual claims are based only on the provided product data. Details must be confirmed by the seller.'
   }
 }
 

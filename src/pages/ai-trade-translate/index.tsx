@@ -6,6 +6,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {createAiTradeRecord, getSKUList} from '@/db/api'
 import type {SKU} from '@/db/types'
+import {useLanguage} from '@/hooks/useLanguage'
 import {
   AiServiceError,
   DEMO_BADGE_TEXT,
@@ -17,6 +18,8 @@ import {
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 
 export default function AiTradeTranslate() {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
   const {user} = useAuth()
   const [products, setProducts] = useState<SKU[]>([])
   const [selected, setSelected] = useState<SKU | null>(null)
@@ -56,7 +59,7 @@ export default function AiTradeTranslate() {
     if (loading) return
     const input = isDemo ? DEMO_PRODUCT : selected ? buildInput(selected) : null
     if (!input) {
-      Taro.showToast({title: '请先选择商品', icon: 'none'})
+      Taro.showToast({title: ui('请先选择商品', 'Please select a product first'), icon: 'none'})
       return
     }
     setLoading(true)
@@ -64,7 +67,12 @@ export default function AiTradeTranslate() {
       const res = await generateProductInternationalization(input)
       setResult(res)
     } catch (err) {
-      const msg = err instanceof AiServiceError ? err.message : 'AI生成失败，请重试'
+      const msg =
+        language === 'en'
+          ? 'AI generation failed. Please retry.'
+          : err instanceof AiServiceError
+            ? err.message
+            : 'AI生成失败，请重试'
       Taro.showToast({title: msg, icon: 'none'})
     } finally {
       setLoading(false)
@@ -85,21 +93,21 @@ export default function AiTradeTranslate() {
     ].join('\n\n')
     try {
       await Taro.setClipboardData({data: text})
-      Taro.showToast({title: '已复制到剪贴板'})
+      Taro.showToast({title: ui('已复制到剪贴板', 'Copied to clipboard')})
     } catch {
-      Taro.showToast({title: '复制失败', icon: 'none'})
+      Taro.showToast({title: ui('复制失败', 'Copy failed'), icon: 'none'})
     }
   }
 
   const handleSave = async () => {
     if (!result) return
     if (!user) {
-      Taro.showToast({title: '请先登录后保存', icon: 'none'})
+      Taro.showToast({title: ui('请先登录后保存', 'Please sign in to save this result'), icon: 'none'})
       return
     }
     const input = isDemo ? DEMO_PRODUCT : selected ? buildInput(selected) : null
     if (!input) return
-    Taro.showLoading({title: '保存中...'})
+    Taro.showLoading({title: ui('保存中...', 'Saving...')})
     const {error} = await createAiTradeRecord({
       user_id: user.id,
       type: 'product_translate',
@@ -113,10 +121,10 @@ export default function AiTradeTranslate() {
     })
     Taro.hideLoading()
     if (error) {
-      Taro.showToast({title: '保存失败，请重试', icon: 'none'})
+      Taro.showToast({title: ui('保存失败，请重试', 'Save failed. Please retry.'), icon: 'none'})
       return
     }
-    Taro.showToast({title: '已保存至业务记录'})
+    Taro.showToast({title: ui('已保存至业务记录', 'Saved to AI trade records')})
   }
 
   const InfoRow = ({label, value}: {label: string; value: string}) => (
@@ -128,16 +136,20 @@ export default function AiTradeTranslate() {
 
   // ===== 需求九：国际化资料完整度检查（基于系统真实SKU字段） =====
   const INTL_CHECK_FIELDS: Array<{key: string; label: string; get: (s: SKU) => string}> = [
-    {key: 'name_en', label: '英文标题', get: (s) => s.name_en || ''},
-    {key: 'description_en', label: '英文描述', get: (s) => s.description_en || ''},
-    {key: 'material', label: '材质', get: (s) => s.material || ''},
-    {key: 'dimensions', label: '尺寸', get: (s) => s.dimensions || ''},
-    {key: 'weight_grams', label: '重量', get: (s) => (s.weight_grams ? `${s.weight_grams}g` : '')},
-    {key: 'packaging', label: '包装方式', get: (s) => s.packaging || ''},
-    {key: 'origin', label: '原产地', get: (s) => s.origin || ''},
-    {key: 'lead_time', label: '交货周期', get: (s) => s.lead_time || ''},
-    {key: 'after_sales_policy', label: '售后政策', get: (s) => s.after_sales_policy || ''},
-    {key: 'sellable_countries', label: '可销售国家', get: (s) => (s.sellable_countries || []).join('、')}
+    {key: 'name_en', label: ui('英文标题', 'English Title'), get: (s) => s.name_en || ''},
+    {key: 'description_en', label: ui('英文描述', 'English Description'), get: (s) => s.description_en || ''},
+    {key: 'material', label: ui('材质', 'Material'), get: (s) => s.material || ''},
+    {key: 'dimensions', label: ui('尺寸', 'Dimensions'), get: (s) => s.dimensions || ''},
+    {key: 'weight_grams', label: ui('重量', 'Weight'), get: (s) => (s.weight_grams ? `${s.weight_grams}g` : '')},
+    {key: 'packaging', label: ui('包装方式', 'Packaging'), get: (s) => s.packaging || ''},
+    {key: 'origin', label: ui('原产地', 'Country of Origin'), get: (s) => s.origin || ''},
+    {key: 'lead_time', label: ui('交货周期', 'Lead Time'), get: (s) => s.lead_time || ''},
+    {key: 'after_sales_policy', label: ui('售后政策', 'After-Sales Policy'), get: (s) => s.after_sales_policy || ''},
+    {
+      key: 'sellable_countries',
+      label: ui('可销售国家', 'Eligible Markets'),
+      get: (s) => (s.sellable_countries || []).join('、')
+    }
   ]
 
   const checkTarget = isDemo ? null : selected
@@ -153,12 +165,12 @@ export default function AiTradeTranslate() {
       {/* 商品选择 */}
       <View className="bg-card rounded-3xl p-6 shadow-card border border-border border-opacity-10 mb-4">
         <View className="flex flex-row items-center justify-between mb-4">
-          <Text className="text-xl font-bold text-foreground">选择现有商品</Text>
+          <Text className="text-xl font-bold text-foreground">{ui('选择现有商品', 'Select a Product')}</Text>
           <View
             className="bg-amber-50 border border-amber-200 rounded-full px-3 py-1 active:scale-95 transition-all"
             onClick={handleLoadDemo}>
             <Text className="text-sm text-amber-700 font-bold">
-              {isDemo ? `已加载${DEMO_BADGE_TEXT}` : '加载演示案例'}
+              {isDemo ? ui(`已加载${DEMO_BADGE_TEXT}`, 'Demo Loaded') : ui('加载演示案例', 'Load Demo')}
             </Text>
           </View>
         </View>
@@ -178,7 +190,8 @@ export default function AiTradeTranslate() {
                 <View className="flex-1 min-w-0">
                   <Text className="text-base text-foreground font-bold truncate block">{p.name}</Text>
                   <Text className="text-sm text-muted-foreground">
-                    ¥{p.price?.toFixed(2)} · {p.sku_code}
+                    {language === 'en' ? 'CNY ' : '¥'}
+                    {p.price?.toFixed(2)} · {p.sku_code}
                   </Text>
                 </View>
                 {active && <View className="i-mdi-check-circle text-primary text-xl ml-2" />}
@@ -192,10 +205,13 @@ export default function AiTradeTranslate() {
               </View>
               <View className="flex-1 min-w-0">
                 <Text className="text-base text-foreground font-bold truncate block">
-                  {DEMO_PRODUCT.name}（{DEMO_BADGE_TEXT}）
+                  {ui('来源商品', 'Source Product')}:{' '}
+                  {language === 'en' ? 'Root Calligraphy Bookmark Set' : DEMO_PRODUCT.name} (
+                  {language === 'en' ? 'Demo' : DEMO_BADGE_TEXT})
                 </Text>
                 <Text className="text-sm text-muted-foreground">
-                  ¥{DEMO_PRODUCT.price?.toFixed(2)} · 5枚装 · 天然木材
+                  {language === 'en' ? 'CNY ' : '¥'}
+                  {DEMO_PRODUCT.price?.toFixed(2)} · {ui('5枚装 · 天然木材', 'Set of 5 · Natural wood')}
                 </Text>
               </View>
               <View className="i-mdi-check-circle text-amber-500 text-xl ml-2" />
@@ -208,7 +224,9 @@ export default function AiTradeTranslate() {
       {completeness && (
         <View className="bg-card rounded-3xl p-6 shadow-card border border-border border-opacity-10 mb-4">
           <View className="flex flex-row items-center justify-between mb-3">
-            <Text className="text-lg font-bold text-foreground">国际化资料完整度</Text>
+            <Text className="text-lg font-bold text-foreground">
+              {ui('国际化资料完整度', 'Localization Readiness')}
+            </Text>
             <Text
               className={`text-2xl font-black ${
                 completeness.percent >= 80
@@ -234,22 +252,37 @@ export default function AiTradeTranslate() {
           </View>
           {completeness.missing.length > 0 ? (
             <View>
-              <Text className="text-sm text-muted-foreground mb-2">缺失字段（显示"待确认"，AI不代填事实数据）</Text>
+              <Text className="text-sm text-muted-foreground mb-2">
+                {ui(
+                  '缺失字段（显示“待确认”，AI不代填事实数据）',
+                  'Missing fields (shown as “To be confirmed”; AI will not invent facts)'
+                )}
+              </Text>
               <View className="flex flex-row flex-wrap gap-2">
                 {completeness.missing.map((m) => (
                   <View key={m} className="bg-red-50 border border-red-200 rounded-full px-3 py-1">
-                    <Text className="text-xs text-red-600">{m} · 待确认</Text>
+                    <Text className="text-xs text-red-600">
+                      {m} · {ui('待确认', 'To be confirmed')}
+                    </Text>
                   </View>
                 ))}
               </View>
               <Text className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                真实尺寸、重量、库存、价格、交货周期等事实数据须由系统或人工输入；AI仅辅助生成语言内容。
+                {ui(
+                  '真实尺寸、重量、库存、价格、交货周期等事实数据须由系统或人工输入；AI仅辅助生成语言内容。',
+                  'Facts such as dimensions, weight, inventory, price, and lead time must be entered by the system or a person; AI only assists with language content.'
+                )}
               </Text>
             </View>
           ) : (
             <View className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 flex flex-row items-center">
               <View className="i-mdi-check-circle text-emerald-500 text-base mr-2" />
-              <Text className="text-sm text-emerald-700">国际化资料完整，可进行AI英文内容生成</Text>
+              <Text className="text-sm text-emerald-700">
+                {ui(
+                  '国际化资料完整，可进行AI英文内容生成',
+                  'Localization data is complete and ready for English copy generation'
+                )}
+              </Text>
             </View>
           )}
         </View>
@@ -258,21 +291,48 @@ export default function AiTradeTranslate() {
       {/* 原始商品信息 */}
       {(selected || isDemo) && (
         <View className="bg-card rounded-3xl p-6 shadow-card border border-border border-opacity-10 mb-4">
-          <Text className="text-lg font-bold text-foreground mb-3">原始商品信息</Text>
-          <InfoRow label="商品名称" value={isDemo ? DEMO_PRODUCT.name : selected?.name || '待确认'} />
-          <InfoRow label="价格" value={`¥${(isDemo ? DEMO_PRODUCT.price : selected?.price)?.toFixed(2)}`} />
-          <InfoRow label="材质" value={isDemo ? DEMO_PRODUCT.material || '待确认' : selected?.material || '待确认'} />
+          <Text className="text-lg font-bold text-foreground mb-3">
+            {ui('原始商品信息', 'Original Source Product Information')}
+          </Text>
           <InfoRow
-            label="规格"
-            value={isDemo ? DEMO_PRODUCT.specification || '待确认' : selected?.dimensions || '待确认'}
+            label={ui('商品名称', 'Source Product Name')}
+            value={isDemo ? DEMO_PRODUCT.name : selected?.name || ui('待确认', 'Not provided')}
           />
           <InfoRow
-            label="描述"
-            value={isDemo ? DEMO_PRODUCT.description || '待确认' : selected?.description || '待确认'}
+            label={ui('价格', 'Price')}
+            value={`${language === 'en' ? 'CNY ' : '¥'}${(isDemo ? DEMO_PRODUCT.price : selected?.price)?.toFixed(2)}`}
           />
           <InfoRow
-            label="文化背景"
-            value={isDemo ? DEMO_PRODUCT.culturalBackground || '待确认' : '待确认（SKU未提供）'}
+            label={ui('材质', 'Material')}
+            value={
+              isDemo
+                ? DEMO_PRODUCT.material || ui('待确认', 'Not provided')
+                : selected?.material || ui('待确认', 'Not provided')
+            }
+          />
+          <InfoRow
+            label={ui('规格', 'Specification')}
+            value={
+              isDemo
+                ? DEMO_PRODUCT.specification || ui('待确认', 'Not provided')
+                : selected?.dimensions || ui('待确认', 'Not provided')
+            }
+          />
+          <InfoRow
+            label={ui('描述', 'Description')}
+            value={
+              isDemo
+                ? DEMO_PRODUCT.description || ui('待确认', 'Not provided')
+                : selected?.description || ui('待确认', 'Not provided')
+            }
+          />
+          <InfoRow
+            label={ui('文化背景', 'Cultural Background')}
+            value={
+              isDemo
+                ? DEMO_PRODUCT.culturalBackground || ui('待确认', 'Not provided')
+                : ui('待确认（SKU未提供）', 'Not provided by SKU')
+            }
           />
         </View>
       )}
@@ -282,7 +342,9 @@ export default function AiTradeTranslate() {
         className={`rounded-full flex items-center justify-center py-4 mb-4 shadow-elegant active:scale-[0.98] transition-all ${loading ? 'bg-primary/50' : 'bg-primary'}`}
         onClick={handleGenerate}>
         <Text className="text-lg text-primary-foreground font-black">
-          {loading ? 'AI生成中，请稍候...' : 'AI生成海外商品信息'}
+          {loading
+            ? ui('AI生成中，请稍候...', 'Generating English copy...')
+            : ui('AI生成海外商品信息', 'Generate English Product Copy')}
         </Text>
       </View>
 
@@ -290,10 +352,12 @@ export default function AiTradeTranslate() {
       {result && (
         <View className="bg-card rounded-3xl p-6 shadow-card border border-border border-opacity-10 mb-4">
           <View className="flex flex-row items-center justify-between mb-4">
-            <Text className="text-lg font-bold text-foreground">英文商品信息（English）</Text>
+            <Text className="text-lg font-bold text-foreground">
+              {ui('英文商品信息（English）', 'English Product Copy')}
+            </Text>
             {isDemo && (
               <View className="bg-amber-100 rounded-full px-2 py-0.5">
-                <Text className="text-xs text-amber-700 font-bold">{DEMO_BADGE_TEXT}</Text>
+                <Text className="text-xs text-amber-700 font-bold">{language === 'en' ? 'Demo' : DEMO_BADGE_TEXT}</Text>
               </View>
             )}
           </View>
@@ -328,21 +392,24 @@ export default function AiTradeTranslate() {
             <View
               className="flex-1 rounded-full bg-muted flex items-center justify-center py-3 active:scale-95 transition-all"
               onClick={handleGenerate}>
-              <Text className="text-base text-foreground font-bold">重新生成</Text>
+              <Text className="text-base text-foreground font-bold">{ui('重新生成', 'Regenerate')}</Text>
             </View>
             <View
               className="flex-1 rounded-full bg-muted flex items-center justify-center py-3 active:scale-95 transition-all"
               onClick={handleCopy}>
-              <Text className="text-base text-foreground font-bold">复制</Text>
+              <Text className="text-base text-foreground font-bold">{ui('复制', 'Copy')}</Text>
             </View>
             <View
               className="flex-1 rounded-full bg-primary flex items-center justify-center py-3 active:scale-95 transition-all"
               onClick={handleSave}>
-              <Text className="text-base text-primary-foreground font-bold">保存</Text>
+              <Text className="text-base text-primary-foreground font-bold">{ui('保存', 'Save')}</Text>
             </View>
           </View>
           <Text className="text-xs text-muted-foreground mt-3">
-            保存后可在「AI业务记录」中查看；正式使用前须经人工确认。
+            {ui(
+              '保存后可在「AI业务记录」中查看；正式使用前须经人工确认。',
+              'Saved results are available in AI Trade Records. Review all content before production use.'
+            )}
           </Text>
         </View>
       )}

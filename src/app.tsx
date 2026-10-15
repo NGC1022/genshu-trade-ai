@@ -8,12 +8,14 @@ import {useEffect} from 'react'
 import {AuthProvider} from '@/contexts/AuthContext'
 import {useMessageBadge} from '@/hooks/useMessageBadge'
 import {useTabBarPageClass} from '@/hooks/useTabBarPageClass'
+import {applyTabBarLanguage, getLanguage} from '@/utils/i18n'
 
 import './app.scss'
 
 const AppContent: React.FC<PropsWithChildren<unknown>> = ({children}) => {
   useMessageBadge()
   useEffect(() => {
+    applyTabBarLanguage(getLanguage())
     const runtime = globalThis as any
     const document = runtime.document
     const location = runtime.location

@@ -18,6 +18,21 @@ import {
 } from './types'
 
 export const PENDING_CN = '待确认'
+const PENDING_EN = 'To be confirmed — please provide verified English content.'
+const CJK_PATTERN = /[\u3400-\u9fff]/
+
+function ensureEnglish(v: unknown): string {
+  const value = ensureStr(v, PENDING_EN)
+  return CJK_PATTERN.test(value) ? PENDING_EN : value
+}
+
+function ensureEnglishArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [PENDING_EN]
+  const list = v
+    .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    .map((item) => ensureEnglish(item))
+  return list.length > 0 ? list : [PENDING_EN]
+}
 
 /** 安全JSON解析（真实AI返回文本时使用；Mock直接返回对象，但仍走统一校验入口） */
 export function safeJsonParse<T>(raw: string): T | null {
@@ -57,14 +72,14 @@ export function assertValidObject(v: unknown, scene: string): Record<string, unk
 export function validateProductIntl(v: unknown): ProductIntlResult {
   const o = assertValidObject(v, '商品国际化')
   return {
-    title: ensureStr(o.title),
-    description: ensureStr(o.description),
-    features: ensureStrArray(o.features),
-    keywords: ensureStrArray(o.keywords),
-    cultural_background: ensureStr(o.cultural_background),
-    material: ensureStr(o.material),
-    specification: ensureStr(o.specification),
-    notice: ensureStr(o.notice)
+    title: ensureEnglish(o.title),
+    description: ensureEnglish(o.description),
+    features: ensureEnglishArray(o.features),
+    keywords: ensureEnglishArray(o.keywords),
+    cultural_background: ensureEnglish(o.cultural_background),
+    material: ensureEnglish(o.material),
+    specification: ensureEnglish(o.specification),
+    notice: ensureEnglish(o.notice)
   }
 }
 
@@ -102,7 +117,7 @@ export function validateInquiryAnalysis(v: unknown): InquiryAnalysisResult {
 export function validateQuoteDescription(v: unknown): QuoteDescriptionResult {
   const o = assertValidObject(v, '报价说明')
   return {
-    description: ensureStr(o.description),
+    description: ensureEnglish(o.description),
     items_to_confirm: ensureStrArray(o.items_to_confirm)
   }
 }
@@ -111,7 +126,7 @@ export function validateQuoteDescription(v: unknown): QuoteDescriptionResult {
 export function validateInquiryReply(v: unknown): {reply: string; to_confirm: string[]} {
   const o = assertValidObject(v, '英文回复')
   return {
-    reply: ensureStr(o.reply),
+    reply: ensureEnglish(o.reply),
     to_confirm: ensureStrArray(o.to_confirm)
   }
 }

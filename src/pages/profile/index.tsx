@@ -3,10 +3,13 @@ import Taro, {useDidShow} from '@tarojs/taro'
 import {useCallback, useEffect, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {getUnreadMessageCount} from '@/db/api'
+import {useLanguage} from '@/hooks/useLanguage'
+import {setLanguage, t} from '@/utils/i18n'
 import {isBusinessRole} from '@/utils/roles'
 
 export default function Profile() {
   const {user, profile, signOut} = useAuth()
+  const language = useLanguage()
   const [isAdmin, setIsAdmin] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -34,7 +37,7 @@ export default function Profile() {
 
   const handleLogout = async () => {
     await signOut()
-    Taro.showToast({title: '已退出登录', icon: 'success'})
+    Taro.showToast({title: t('logged_out'), icon: 'success'})
     setTimeout(() => {
       Taro.reLaunch({url: '/pages/login/index'})
     }, 1000)
@@ -54,12 +57,37 @@ export default function Profile() {
         <View className="w-24 h-24 bg-gradient-primary rounded-full flex items-center justify-center mb-4">
           <View className="i-mdi-account text-5xl text-white" />
         </View>
-        <Text className="text-lg text-foreground mb-6">请先登录</Text>
+        <Text className="text-lg text-foreground mb-6">{t('login_first')}</Text>
         <Button
           className="bg-gradient-primary text-white rounded-full px-8 py-3 text-base font-bold break-keep"
           onClick={() => Taro.navigateTo({url: '/pages/login/index'})}>
-          立即登录
+          {t('login_now')}
         </Button>
+        <View className="bg-card rounded-2xl p-4 mt-6 w-full max-w-sm border border-border border-opacity-10">
+          <Text className="text-sm text-muted-foreground font-bold block mb-3 text-center">{t('language')}</Text>
+          <View className="flex flex-row gap-3">
+            <View
+              className={`flex-1 rounded-xl px-3 py-2 border ${language === 'zh' ? 'border-primary bg-primary/5' : 'border-border border-opacity-20'}`}
+              onClick={() => {
+                setLanguage('zh')
+                Taro.showToast({title: t('language_changed_zh'), icon: 'none'})
+              }}>
+              <Text className={`text-center font-bold ${language === 'zh' ? 'text-primary' : 'text-foreground'}`}>
+                简体中文
+              </Text>
+            </View>
+            <View
+              className={`flex-1 rounded-xl px-3 py-2 border ${language === 'en' ? 'border-primary bg-primary/5' : 'border-border border-opacity-20'}`}
+              onClick={() => {
+                setLanguage('en')
+                Taro.showToast({title: t('language_changed_en'), icon: 'none'})
+              }}>
+              <Text className={`text-center font-bold ${language === 'en' ? 'text-primary' : 'text-foreground'}`}>
+                English
+              </Text>
+            </View>
+          </View>
+        </View>
       </View>
     )
   }
@@ -75,11 +103,15 @@ export default function Profile() {
             </View>
             <View>
               <Text className="text-2xl font-black text-white mb-1 tracking-tight">
-                {(profile?.username as string) || '艺术体验者'}
+                {(profile?.username as string) || t('user_name')}
               </Text>
               <View className="bg-white/20 px-3 py-0.5 rounded-full self-start inline-block">
                 <Text className="text-xs text-white font-bold tracking-widest uppercase">
-                  {profile?.role === 'super_admin' ? '特级管理员' : profile?.role === 'admin' ? '管理员' : '尊享会员'}
+                  {profile?.role === 'super_admin'
+                    ? t('super_admin')
+                    : profile?.role === 'admin'
+                      ? t('admin')
+                      : t('member')}
                 </Text>
               </View>
             </View>
@@ -88,12 +120,12 @@ export default function Profile() {
             <View
               className="bg-white/10 hover:bg-white/20 active:scale-95 backdrop-blur-sm rounded-2xl px-5 py-2.5 border border-white/20 transition-all text-center"
               onClick={() => navigateTo('/pages/profile-edit/index')}>
-              <Text className="text-base text-white font-bold">资料设置</Text>
+              <Text className="text-base text-white font-bold">{t('profile_settings')}</Text>
             </View>
             <View
               className="bg-white/10 hover:bg-white/20 active:scale-95 backdrop-blur-sm rounded-2xl px-5 py-2.5 border border-white/20 transition-all text-center"
               onClick={() => user && navigateTo(`/pages/user-profile/index?userId=${user.id}`)}>
-              <Text className="text-base text-white font-bold">个人页面</Text>
+              <Text className="text-base text-white font-bold">{t('personal_page')}</Text>
             </View>
           </View>
         </View>
@@ -103,7 +135,7 @@ export default function Profile() {
         {/* 社交互动板块 */}
         <View className="bg-card rounded-[32px] p-6 mb-6 shadow-card border border-border border-opacity-10">
           <Text className="text-base text-muted-foreground font-black uppercase tracking-widest mb-4 block px-2">
-            我的动态
+            {t('my_activity')}
           </Text>
           <View className="grid grid-cols-4 gap-3 py-2">
             <View
@@ -112,7 +144,7 @@ export default function Profile() {
               <View className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-2">
                 <View className="i-mdi-note-text text-2xl text-primary" />
               </View>
-              <Text className="text-sm font-bold text-foreground">已发文</Text>
+              <Text className="text-sm font-bold text-foreground">{t('posts')}</Text>
             </View>
             <View
               className="flex flex-col items-center active:opacity-60"
@@ -120,7 +152,7 @@ export default function Profile() {
               <View className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-2">
                 <View className="i-mdi-file-document-outline text-2xl text-primary" />
               </View>
-              <Text className="text-sm font-bold text-foreground">草稿箱</Text>
+              <Text className="text-sm font-bold text-foreground">{t('drafts')}</Text>
             </View>
             <View
               className="flex flex-col items-center active:opacity-60"
@@ -128,7 +160,7 @@ export default function Profile() {
               <View className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-2">
                 <View className="i-mdi-account-multiple text-2xl text-primary" />
               </View>
-              <Text className="text-sm font-bold text-foreground">已追踪</Text>
+              <Text className="text-sm font-bold text-foreground">{t('following')}</Text>
             </View>
             <View
               className="flex flex-col items-center active:opacity-60"
@@ -141,7 +173,7 @@ export default function Profile() {
                   </View>
                 )}
               </View>
-              <Text className="text-sm font-bold text-foreground">消息</Text>
+              <Text className="text-sm font-bold text-foreground">{t('messages')}</Text>
             </View>
           </View>
         </View>
@@ -155,9 +187,9 @@ export default function Profile() {
                 <View className="i-mdi-crown text-2xl text-white" />
               </View>
               <View>
-                <Text className="text-lg font-black text-foreground tracking-tight block">会员中心</Text>
+                <Text className="text-lg font-black text-foreground tracking-tight block">{t('member_center')}</Text>
                 <Text className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
-                  VIP Benefits & Exclusive Content
+                  {t('vip_benefits')}
                 </Text>
               </View>
             </View>
@@ -176,7 +208,7 @@ export default function Profile() {
               <View className="w-10 h-10 bg-primary/5 rounded-2xl flex items-center justify-center mr-4">
                 <View className="i-mdi-shopping text-2xl text-primary" />
               </View>
-              <Text className="text-lg font-bold text-foreground tracking-tight">我的订单</Text>
+              <Text className="text-lg font-bold text-foreground tracking-tight">{t('my_orders')}</Text>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
           </View>
@@ -188,7 +220,7 @@ export default function Profile() {
               <View className="w-10 h-10 bg-primary/5 rounded-2xl flex items-center justify-center mr-4">
                 <View className="i-mdi-ticket text-2xl text-primary" />
               </View>
-              <Text className="text-lg font-bold text-foreground tracking-tight">我的门票</Text>
+              <Text className="text-lg font-bold text-foreground tracking-tight">{t('my_tickets')}</Text>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
           </View>
@@ -200,7 +232,7 @@ export default function Profile() {
               <View className="w-10 h-10 bg-primary/5 rounded-2xl flex items-center justify-center mr-4">
                 <View className="i-mdi-palette text-2xl text-primary" />
               </View>
-              <Text className="text-lg font-bold text-foreground tracking-tight">定制订单</Text>
+              <Text className="text-lg font-bold text-foreground tracking-tight">{t('customization_orders')}</Text>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
           </View>
@@ -213,8 +245,8 @@ export default function Profile() {
                 <View className="i-mdi-headset text-2xl text-primary" />
               </View>
               <View className="flex-1">
-                <Text className="text-lg font-bold text-foreground tracking-tight">售后中心</Text>
-                <Text className="text-xs text-muted-foreground mt-0.5">退货 · 换货 · 退款 · 物流破损申报</Text>
+                <Text className="text-lg font-bold text-foreground tracking-tight">{t('after_sales_center')}</Text>
+                <Text className="text-xs text-muted-foreground mt-0.5">{t('after_sales_summary')}</Text>
               </View>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
@@ -227,7 +259,7 @@ export default function Profile() {
               <View className="w-10 h-10 bg-primary/5 rounded-2xl flex items-center justify-center mr-4">
                 <View className="i-mdi-map-marker text-2xl text-primary" />
               </View>
-              <Text className="text-lg font-bold text-foreground tracking-tight">收货地址</Text>
+              <Text className="text-lg font-bold text-foreground tracking-tight">{t('delivery_address')}</Text>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
           </View>
@@ -239,7 +271,7 @@ export default function Profile() {
               <View className="w-10 h-10 bg-primary/5 rounded-2xl flex items-center justify-center mr-4">
                 <View className="i-mdi-earth text-2xl text-primary" />
               </View>
-              <Text className="text-lg font-bold text-foreground tracking-tight">AI跨境贸易助手</Text>
+              <Text className="text-lg font-bold text-foreground tracking-tight">{t('ai_trade_assistant')}</Text>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
           </View>
@@ -249,7 +281,7 @@ export default function Profile() {
         {isBusinessRole((profile as any)?.role) && (
           <View className="bg-card rounded-[32px] p-6 mb-6 shadow-card border border-secondary border-opacity-20">
             <Text className="text-base text-secondary/70 font-black uppercase tracking-widest mb-4 block px-2">
-              商家业务端
+              {t('merchant_portal')}
             </Text>
             <View
               className="flex items-center justify-between py-4 active:opacity-60 transition-opacity"
@@ -259,8 +291,8 @@ export default function Profile() {
                   <View className="i-mdi-storefront-outline text-2xl text-secondary" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-lg font-bold text-foreground tracking-tight">商家运营后台</Text>
-                  <Text className="text-xs text-muted-foreground mt-0.5">商品 · SKU · 订单 · 客户 · 售后 · 看板</Text>
+                  <Text className="text-lg font-bold text-foreground tracking-tight">{t('merchant_admin')}</Text>
+                  <Text className="text-xs text-muted-foreground mt-0.5">{t('merchant_admin_summary')}</Text>
                 </View>
               </View>
               <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
@@ -272,17 +304,15 @@ export default function Profile() {
         <View className="bg-muted/60 rounded-[32px] p-6 mb-6">
           <View className="flex flex-row items-center mb-2">
             <View className="i-mdi-shield-lock-outline text-lg text-muted-foreground mr-2" />
-            <Text className="text-sm text-muted-foreground font-bold">隐私与数据使用说明</Text>
+            <Text className="text-sm text-muted-foreground font-bold">{t('privacy_data')}</Text>
           </View>
-          <Text className="text-xs text-muted-foreground leading-relaxed">
-            手机号、邮箱、收货地址与客户联系方式等信息在无权限角色下展示时将进行脱敏处理；客户业务数据按角色（消费者/商家/审核/管理员）控制访问；AI处理业务信息仅用于生成辅助内容，不会在页面中泄露不必要的敏感数据。本项目未声明任何正式安全认证或法律合规资质，正式运营前需完成相应合规评估。
-          </Text>
+          <Text className="text-xs text-muted-foreground leading-relaxed">{t('privacy_data_summary')}</Text>
         </View>
 
         {isAdmin && (
           <View className="bg-card rounded-[32px] p-6 mb-6 shadow-card border border-accent border-opacity-10 bg-accent/5">
             <Text className="text-base text-accent/60 font-black uppercase tracking-widest mb-4 block px-2">
-              管理控制台
+              {t('admin_console')}
             </Text>
             <View
               className="flex items-center justify-between py-4 active:opacity-60 transition-opacity"
@@ -291,7 +321,7 @@ export default function Profile() {
                 <View className="w-10 h-10 bg-accent/10 rounded-2xl flex items-center justify-center mr-4">
                   <View className="i-mdi-clipboard-list text-2xl text-accent" />
                 </View>
-                <Text className="text-lg font-bold text-foreground tracking-tight">订单管理</Text>
+                <Text className="text-lg font-bold text-foreground tracking-tight">{t('order_management')}</Text>
               </View>
               <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
             </View>
@@ -302,7 +332,7 @@ export default function Profile() {
                 <View className="w-10 h-10 bg-accent/10 rounded-2xl flex items-center justify-center mr-4">
                   <View className="i-mdi-qrcode-scan text-2xl text-accent" />
                 </View>
-                <Text className="text-lg font-bold text-foreground tracking-tight">门票核销</Text>
+                <Text className="text-lg font-bold text-foreground tracking-tight">{t('ticket_verification')}</Text>
               </View>
               <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
             </View>
@@ -313,7 +343,7 @@ export default function Profile() {
                 <View className="w-10 h-10 bg-accent/10 rounded-2xl flex items-center justify-center mr-4">
                   <View className="i-mdi-file-document-edit text-2xl text-accent" />
                 </View>
-                <Text className="text-lg font-bold text-foreground tracking-tight">定制审核</Text>
+                <Text className="text-lg font-bold text-foreground tracking-tight">{t('customization_review')}</Text>
               </View>
               <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
             </View>
@@ -324,7 +354,7 @@ export default function Profile() {
                 <View className="w-10 h-10 bg-accent/10 rounded-2xl flex items-center justify-center mr-4">
                   <View className="i-mdi-cash-refund text-2xl text-accent" />
                 </View>
-                <Text className="text-lg font-bold text-foreground tracking-tight">退款管理</Text>
+                <Text className="text-lg font-bold text-foreground tracking-tight">{t('refund_management')}</Text>
               </View>
               <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
             </View>
@@ -336,16 +366,47 @@ export default function Profile() {
                 <View className="w-10 h-10 bg-accent/10 rounded-2xl flex items-center justify-center mr-4">
                   <View className="i-mdi-shield-alert text-2xl text-accent" />
                 </View>
-                <Text className="text-lg font-bold text-foreground tracking-tight">内容举报管理</Text>
+                <Text className="text-lg font-bold text-foreground tracking-tight">{t('report_management')}</Text>
               </View>
               <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
             </View>
           </View>
         )}
 
+        <View className="bg-card rounded-[32px] p-6 mb-6 shadow-card border border-border border-opacity-10">
+          <View className="mb-4 px-2">
+            <Text className="text-base text-muted-foreground font-black uppercase tracking-widest block">
+              {t('language')}
+            </Text>
+            <Text className="text-xs text-muted-foreground mt-1 block">{t('language_description')}</Text>
+          </View>
+          <View className="flex flex-row gap-3">
+            <View
+              className={`flex-1 rounded-2xl px-4 py-3 border ${language === 'zh' ? 'border-primary bg-primary/5' : 'border-border border-opacity-20'}`}
+              onClick={() => {
+                setLanguage('zh')
+                Taro.showToast({title: t('language_changed_zh'), icon: 'none'})
+              }}>
+              <Text className={`text-center font-bold ${language === 'zh' ? 'text-primary' : 'text-foreground'}`}>
+                简体中文
+              </Text>
+            </View>
+            <View
+              className={`flex-1 rounded-2xl px-4 py-3 border ${language === 'en' ? 'border-primary bg-primary/5' : 'border-border border-opacity-20'}`}
+              onClick={() => {
+                setLanguage('en')
+                Taro.showToast({title: t('language_changed_en'), icon: 'none'})
+              }}>
+              <Text className={`text-center font-bold ${language === 'en' ? 'text-primary' : 'text-foreground'}`}>
+                English
+              </Text>
+            </View>
+          </View>
+        </View>
+
         <View className="bg-card rounded-[32px] p-6 mb-8 shadow-card border border-border border-opacity-10">
           <Text className="text-base text-muted-foreground font-black uppercase tracking-widest mb-4 block px-2">
-            服务与支持
+            {t('service_support')}
           </Text>
           <View
             className="flex items-center justify-between py-4 active:opacity-60 transition-opacity"
@@ -354,7 +415,7 @@ export default function Profile() {
               <View className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center mr-4">
                 <View className="i-mdi-shield-lock text-2xl text-primary" />
               </View>
-              <Text className="text-lg font-bold text-foreground tracking-tight">隐私管理</Text>
+              <Text className="text-lg font-bold text-foreground tracking-tight">{t('privacy_management')}</Text>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
           </View>
@@ -366,7 +427,7 @@ export default function Profile() {
               <View className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center mr-4">
                 <View className="i-mdi-help-circle text-2xl text-primary" />
               </View>
-              <Text className="text-lg font-bold text-foreground tracking-tight">帮助中心</Text>
+              <Text className="text-lg font-bold text-foreground tracking-tight">{t('help_center')}</Text>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
           </View>
@@ -378,7 +439,7 @@ export default function Profile() {
               <View className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center mr-4">
                 <View className="i-mdi-headset text-2xl text-primary" />
               </View>
-              <Text className="text-lg font-bold text-foreground tracking-tight">在线客服</Text>
+              <Text className="text-lg font-bold text-foreground tracking-tight">{t('online_support')}</Text>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
           </View>
@@ -391,8 +452,8 @@ export default function Profile() {
                 <View className="i-mdi-robot-outline text-2xl text-secondary" />
               </View>
               <View className="flex flex-col">
-                <Text className="text-lg font-bold text-foreground tracking-tight">AI跨境客服</Text>
-                <Text className="text-xs text-muted-foreground">跨境贸易业务咨询（演示模式）</Text>
+                <Text className="text-lg font-bold text-foreground tracking-tight">{t('ai_trade_support')}</Text>
+                <Text className="text-xs text-muted-foreground">{t('ai_trade_support_summary')}</Text>
               </View>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
@@ -406,8 +467,8 @@ export default function Profile() {
                 <View className="i-mdi-headset text-2xl text-primary" />
               </View>
               <View>
-                <Text className="text-lg font-bold text-foreground tracking-tight">售后服务</Text>
-                <Text className="text-xs text-muted-foreground mt-0.5 block">商品质量 · 物流损坏 · 退换货</Text>
+                <Text className="text-lg font-bold text-foreground tracking-tight">{t('after_sales_service')}</Text>
+                <Text className="text-xs text-muted-foreground mt-0.5 block">{t('after_sales_service_summary')}</Text>
               </View>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
@@ -420,7 +481,7 @@ export default function Profile() {
               <View className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center mr-4">
                 <View className="i-mdi-bug-outline text-2xl text-primary" />
               </View>
-              <Text className="text-lg font-bold text-foreground tracking-tight">报错申请</Text>
+              <Text className="text-lg font-bold text-foreground tracking-tight">{t('bug_report')}</Text>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
           </View>
@@ -432,7 +493,7 @@ export default function Profile() {
               <View className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center mr-4">
                 <View className="i-mdi-information-outline text-2xl text-primary" />
               </View>
-              <Text className="text-lg font-bold text-foreground tracking-tight">关于我们</Text>
+              <Text className="text-lg font-bold text-foreground tracking-tight">{t('about_us')}</Text>
             </View>
             <View className="i-mdi-chevron-right text-2xl text-muted-foreground" />
           </View>
@@ -441,7 +502,7 @@ export default function Profile() {
         <Button
           className="w-full bg-destructive/10 text-destructive rounded-3xl py-4 text-base font-black border border-destructive/20 active:bg-destructive active:text-white transition-all mb-10"
           onClick={handleLogout}>
-          退出登录
+          {t('logout')}
         </Button>
       </View>
     </View>
