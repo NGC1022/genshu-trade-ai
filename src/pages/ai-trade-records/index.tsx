@@ -107,6 +107,7 @@ export default function AiTradeRecords() {
     }
     if (exporting) return
     setExporting(true)
+    const downloadWindow = process.env.TARO_ENV === 'h5' ? window.open('about:blank', '_blank') : null
     try {
       const {data, error} = await supabase.functions.invoke('export-ai-trade-records', {body: {}})
       if (error) {
@@ -122,10 +123,18 @@ export default function AiTradeRecords() {
         await Taro.openDocument({filePath: res.tempFilePath, fileType: 'xlsx', showMenu: true})
         Taro.showToast({title: `已导出${data.row_count}条`})
       } else {
-        window.open(data.url, '_blank')
+        if (downloadWindow) downloadWindow.location.href = data.url
+        else {
+          const link = document.createElement('a')
+          link.href = data.url
+          link.target = '_blank'
+          link.rel = 'noopener noreferrer'
+          link.click()
+        }
         Taro.showToast({title: `已导出${data.row_count}条`, icon: 'none'})
       }
     } catch (e) {
+      downloadWindow?.close()
       Taro.hideLoading()
       const msg = e instanceof Error ? e.message : '导出失败，请重试'
       Taro.showToast({title: msg.slice(0, 30), icon: 'none'})

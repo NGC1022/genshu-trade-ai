@@ -1808,7 +1808,7 @@ export async function updateSystemReport(reportId: string, updates: Partial<Syst
 // ==================== AI跨境贸易助手：业务记录 ====================
 
 // 查询当前用户的AI业务记录（可按类型筛选）
-export async function getAiTradeRecords(userId: string, type?: string) {
+export async function getAiTradeRecords(userId: string, type?: string, limit?: number) {
   let query = supabase
     .from('ai_trade_records')
     .select('*')
@@ -1817,11 +1817,12 @@ export async function getAiTradeRecords(userId: string, type?: string) {
   if (type) {
     query = query.eq('type', type)
   }
+  if (limit && Number.isFinite(limit)) query = query.limit(Math.max(1, Math.floor(limit)))
   const {data, error} = await query
   if (!error) return {data: (Array.isArray(data) ? data : []) as AiTradeRecord[], error: null}
   let localRecords = readLocalList<AiTradeRecord>(LOCAL_AI_RECORDS_KEY).filter((record) => record.user_id === userId)
   if (type) localRecords = localRecords.filter((record) => record.type === type)
-  return {data: localRecords, error: null}
+  return {data: limit ? localRecords.slice(0, Math.max(1, Math.floor(limit))) : localRecords, error: null}
 }
 
 // 查询单条AI业务记录详情

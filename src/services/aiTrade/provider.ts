@@ -5,6 +5,7 @@
 // 真实 Provider 应通过 Supabase Edge Function 调用大模型 API，
 // API Key 保存于服务端环境变量，绝不写入前端代码。
 
+import {isSupabaseConfigured} from '@/client/supabase'
 import {mockProvider} from './mockProvider'
 import {remoteProvider} from './remoteProvider'
 import type {
@@ -33,6 +34,14 @@ export interface AiTradeProvider {
   readonly name: string
   /** 是否为Mock实现（页面据此显示"演示模式"标记） */
   readonly isMock: boolean
+  /** 市场分析能力是否仍使用规则演示实现。 */
+  readonly marketAnalysisIsMock: boolean
+  /** 市场分析能力对应的 Provider 标签。 */
+  readonly marketAnalysisProviderName: string
+  /** 客服回复能力是否仍使用规则演示实现。 */
+  readonly supportIsMock: boolean
+  /** 客服回复能力对应的 Provider 标签。 */
+  readonly supportProviderName: string
 
   /** 功能1：AI商品国际化（输入真实商品信息 → 英文商品信息JSON） */
   generateProductInternationalization(input: ProductIntlInput): Promise<ProductIntlResult>
@@ -74,5 +83,5 @@ export interface AiTradeProvider {
  * 将来：接入真实AI后 return realProvider（Edge Function 版本）
  */
 export function getAiTradeProvider(): AiTradeProvider {
-  return process.env.TARO_APP_AI_PROVIDER === 'remote' ? remoteProvider : mockProvider
+  return process.env.TARO_APP_AI_PROVIDER === 'remote' && isSupabaseConfigured ? remoteProvider : mockProvider
 }

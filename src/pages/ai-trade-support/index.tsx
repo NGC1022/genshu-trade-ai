@@ -1,10 +1,10 @@
 // @title AI跨境客服
-// AI跨境客服：基于跨境业务知识的多轮对话（演示模式，不虚构事实数据）
+// AI跨境客服：远端 MiniMax 或规则演示模式，不虚构事实数据
 // 支持发送文创商品图片，由 MiniMax-M3 多模态模型识别并解答
 import {Image, ScrollView, Text, View} from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import {useCallback, useRef, useState} from 'react'
-import {supabase} from '@/client/supabase'
+import {isSupabaseConfigured, supabase} from '@/client/supabase'
 import {useAuth} from '@/contexts/AuthContext'
 import type {SupportMessage} from '@/services/aiTrade'
 import {analyzeProductImage, generateSupportReply, getProviderInfo} from '@/services/aiTrade'
@@ -77,12 +77,20 @@ export default function AiTradeSupport() {
   // 发送文创商品图片：选图 → 上传Storage → MiniMax-M3多模态识别 → 展示结果
   const sendImage = useCallback(async () => {
     if (sendingRef.current || uploading) return
+    if (!isSupabaseConfigured) {
+      Taro.showToast({title: '图片识别尚未配置服务器连接', icon: 'none'})
+      return
+    }
+    if (!user) {
+      Taro.showToast({title: '请登录后再上传图片', icon: 'none'})
+      return
+    }
     try {
       const files = await selectMediaFiles({mediaType: ['image'], count: 1})
       if (!files || files.length === 0) return
       const file = files[0]
       setUploading(true)
-      const res = await uploadToSupabase(file, {bucket: IMAGE_BUCKET, userId: user?.id || 'guest'})
+      const res = await uploadToSupabase(file, {bucket: IMAGE_BUCKET, userId: user.id})
       if (!res.success || !res.data?.path) {
         Taro.showToast({title: '图片上传失败', icon: 'none'})
         return
@@ -117,8 +125,11 @@ export default function AiTradeSupport() {
         setSending(false)
         scrollBottom()
       }
-    } catch {
-      // 用户取消选图等，静默处理
+    } catch (error) {
+      const message = error instanceof Error ? error.message : ''
+      if (!message.toLowerCase().includes('cancel')) {
+        Taro.showToast({title: message || '图片选择失败，请重试', icon: 'none'})
+      }
     } finally {
       setUploading(false)
     }
@@ -146,15 +157,21 @@ export default function AiTradeSupport() {
 
   return (
     <View className="h-screen flex flex-col bg-background">
-      {/* 顶部演示模式提示 */}
-      {providerInfo.isMock ? (
-        <View className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex flex-row items-center">
-          <View className="i-mdi-information-outline text-base text-amber-700 mr-1.5" />
-          <Text className="text-xs text-amber-700 flex-1">
-            课堂演示模式：当前使用演示数据，AI接口可根据实际部署环境替换
-          </Text>
-        </View>
-      ) : null}
+      <View
+        className={`border-b px-4 py-2 flex flex-row items-center ${
+          providerInfo.supportIsMock ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'
+        }`}>
+        <View
+          className={`i-mdi-information-outline text-base mr-1.5 ${
+            providerInfo.supportIsMock ? 'text-amber-700' : 'text-emerald-700'
+          }`}
+        />
+        <Text className={`text-xs flex-1 ${providerInfo.supportIsMock ? 'text-amber-700' : 'text-emerald-700'}`}>
+          {providerInfo.supportIsMock
+            ? '课堂演示模式：客服回复使用规则模拟；图片识别需配置服务端模型。'
+            : `远端客服：${providerInfo.supportProviderName} · 图片识别使用同一模型服务，交易事实仍需人工确认。`}
+        </Text>
+      </View>
 
       {/* 多语言能力说明（需求二十二：中英实时互译已启用，日/西语预留） */}
       <View className="bg-muted/60 border-b border-border border-opacity-10 px-4 py-2 flex flex-row items-center">

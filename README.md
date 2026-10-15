@@ -52,3 +52,10 @@ pnpm install # Install dependencies
 ```bash
 pnpm run lint  # Lint source (Important: After modifying the code, please execute this command to perform necessary checks.)
 ```
+
+
+## AI 跨境助手数据与部署
+
+- 数据口径、远端 AI 状态、地图与 IG/FB 授权要求：[真实数据与外部服务接入说明](docs/REAL_DATA_AND_SOCIAL_INTEGRATION.md)
+- WTO/官方来源自动更新、Supabase 迁移与课堂检查步骤：[可持续更新运行手册](docs/SUSTAINABLE_UPDATE_RUNBOOK.md)
+- 重要：只有在 Supabase Functions/迁移与服务端 Secrets 配置完成后，WTO 实时刷新、MiniMax 市场分析/客服和私密 Excel 导出才会真正启用。未配置时界面应显示静态核验快照或演示模式。

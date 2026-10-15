@@ -18,25 +18,27 @@ import {
 import {
   fetchLiveTradeData,
   getSnapshotSummary,
-  getTradeDataSnapshot,
+  getWtoMarketEvidence,
   MARKET_OPTIONS,
-  type MarketScoreBreakdown,
-  scoreMarkets
+  TRADE_DATA_SNAPSHOT,
+  type TradeDataSnapshot
 } from '@/services/aiTrade/tradeData'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 
 const SECTION_CLASS = 'bg-card rounded-[28px] p-5 shadow-card border border-border border-opacity-10 mb-4'
 
-function SourceBadge({status}: {status: 'official' | 'classroom_snapshot' | 'ai_inference'}) {
+function SourceBadge({status}: {status: 'official' | 'classroom_snapshot' | 'ai_inference' | 'mock'}) {
   const labels = {
     official: '官方统计',
     classroom_snapshot: '课堂快照',
-    ai_inference: 'AI辅助判断'
+    ai_inference: '远端AI辅助判断',
+    mock: '规则演示结果'
   }
   const styles = {
     official: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     classroom_snapshot: 'bg-amber-50 text-amber-700 border-amber-200',
-    ai_inference: 'bg-violet-50 text-violet-700 border-violet-200'
+    ai_inference: 'bg-violet-50 text-violet-700 border-violet-200',
+    mock: 'bg-orange-50 text-orange-700 border-orange-200'
   }
   return (
     <View className={`rounded-full border px-2.5 py-1 ${styles[status]}`}>
@@ -45,18 +47,13 @@ function SourceBadge({status}: {status: 'official' | 'classroom_snapshot' | 'ai_
   )
 }
 
-function ScoreRow({label, value}: {label: string; value: number}) {
-  return (
-    <View className="mb-2">
-      <View className="flex flex-row items-center justify-between mb-1">
-        <Text className="text-xs text-muted-foreground">{label}</Text>
-        <Text className="text-xs text-foreground font-bold">{value}</Text>
-      </View>
-      <View className="h-2 rounded-full bg-muted overflow-hidden">
-        <View className="h-2 rounded-full bg-primary" style={{width: `${value}%`}} />
-      </View>
-    </View>
-  )
+function formatTradeValue(value: number) {
+  return value.toLocaleString('zh-CN', {maximumFractionDigits: 1})
+}
+
+function openMarketSource(url: string) {
+  if (process.env.TARO_ENV === 'h5') window.open(url, '_blank', 'noopener,noreferrer')
+  else Taro.setClipboardData({data: url, success: () => Taro.showToast({title: '来源链接已复制', icon: 'success'})})
 }
 
 export default function AiTradeMarket() {
@@ -71,35 +68,32 @@ export default function AiTradeMarket() {
   const provider = useMemo(() => getProviderInfo(), [])
 
   const [liveData, setLiveData] = useState(false)
+  const [staleData, setStaleData] = useState(false)
   const [dataFetchedAt, setDataFetchedAt] = useState<string | null>(null)
-  const [_dataVersion, setDataVersion] = useState(0)
+  const [tradeData, setTradeData] = useState<TradeDataSnapshot[]>(TRADE_DATA_SNAPSHOT)
 
-  const summary = useMemo(() => getSnapshotSummary(), [])
-  const scores = useMemo(() => scoreMarkets(), [])
-  const selectedScore = useMemo<MarketScoreBreakdown | undefined>(() => {
+  const summary = useMemo(() => getSnapshotSummary(tradeData), [tradeData])
+  const selectedEvidence = useMemo(() => {
     if (markets.length !== 1) return undefined
-    return scores.find((item) => item.market === markets[0])
-  }, [markets, scores])
+    return getWtoMarketEvidence(tradeData, markets[0])
+  }, [markets, tradeData])
 
   useEffect(() => {
-    getSKUList().then(({data}) => setProducts(data))
-    fetchLiveTradeData().then((result) => {
-      setLiveData(result.live)
-      setDataFetchedAt(result.fetchedAt || null)
-      setDataVersion((version) => version + 1)
+    let active = true
+    void getSKUList().then(({data}) => {
+      if (active) setProducts(data)
     })
+    void fetchLiveTradeData().then((result) => {
+      if (!active) return
+      setLiveData(result.live)
+      setStaleData(Boolean(result.stale))
+      setDataFetchedAt(result.fetchedAt || null)
+      setTradeData(result.data)
+    })
+    return () => {
+      active = false
+    }
   }, [])
-
-  const openSource = (url: string) => {
-    const runtime = globalThis as any
-    if (runtime.window?.open) runtime.window.open(url, '_blank', 'noopener,noreferrer')
-    else Taro.setClipboardData({data: url, success: () => Taro.showToast({title: '来源链接已复制', icon: 'success'})})
-  }
-
-  const latestEcommerce = summary.ecommerce[summary.ecommerce.length - 1]
-  const latestDelivered = getTradeDataSnapshot().find((item) => item.indicator === '可数字化交付服务进出口')
-  const ecommerceChange =
-    summary.ecommerceYoY === null ? '待更新' : `同比 ${summary.ecommerceYoY > 0 ? '+' : ''}${summary.ecommerceYoY}%`
 
   const buildInput = useCallback(
     (sku: SKU): ProductIntlInput => ({
@@ -165,6 +159,12 @@ export default function AiTradeMarket() {
     }
     const input = isDemo ? DEMO_PRODUCT : selected ? buildInput(selected) : null
     if (!input) return
+    const selectedMarketEvidence = markets
+      .map((market) => getWtoMarketEvidence(tradeData, market))
+      .filter((item): item is TradeDataSnapshot => Boolean(item))
+    const officialContext = tradeData.filter(
+      (item) => item.id === 'cn-cbe-2025' || item.id === 'cn-digital-delivered-2025'
+    )
     Taro.showLoading({title: '保存中...'})
     let failed = 0
     for (const result of results) {
@@ -177,13 +177,22 @@ export default function AiTradeMarket() {
         input_data: {
           ...input,
           markets,
-          data_snapshot_ids: getTradeDataSnapshot().map((item) => item.id),
-          score_model: 'scale30-growth25-digital20-cultural15-feasibility10'
+          verified_data_evidence: {
+            captured_at: dataFetchedAt,
+            provider: provider.marketAnalysisProviderName,
+            market_digital_service_exports: selectedMarketEvidence,
+            domestic_official_context: officialContext,
+            limitation: 'WTO报告方数字化交付服务出口及中国宏观贸易总额均不能直接代表目的地商品需求。'
+          }
         },
-        ai_result: {...result, market_score: scores.find((item) => item.market === result.market)},
+        ai_result: {
+          ...result,
+          analysis_provider: provider.marketAnalysisProviderName,
+          evidence_captured_at: dataFetchedAt
+        },
         status: 'draft',
         review_status: 'pending',
-        source: provider.isMock ? 'mock' : 'realtime',
+        source: provider.marketAnalysisIsMock ? 'mock' : 'realtime',
         is_demo: isDemo
       })
       if (error) failed += 1
@@ -209,7 +218,11 @@ export default function AiTradeMarket() {
         </Text>
         <View className={`mt-2 self-start rounded-full px-2.5 py-1 ${liveData ? 'bg-emerald-50' : 'bg-amber-50'}`}>
           <Text className={`text-[10px] font-bold ${liveData ? 'text-emerald-700' : 'text-amber-700'}`}>
-            {liveData ? `WTO实时快照 · ${dataFetchedAt || '已刷新'}` : '课堂快照（实时数据未连接）'}
+            {liveData
+              ? `WTO已同步至${summary.latestWtoYear || '—'} · ${dataFetchedAt || '已刷新'}`
+              : staleData
+                ? `WTO缓存快照 · 最新数据年${summary.latestWtoYear || '—'}`
+                : `已核验快照 · ${provider.marketAnalysisIsMock ? '规则演示模式' : provider.marketAnalysisProviderName}`}
           </Text>
         </View>
       </View>
@@ -270,7 +283,7 @@ export default function AiTradeMarket() {
         <View className="flex flex-row items-center justify-between mb-3">
           <View>
             <Text className="text-lg text-foreground font-bold block">目标市场</Text>
-            <Text className="text-xs text-muted-foreground mt-1">可多选，评分仅为AI辅助判断</Text>
+            <Text className="text-xs text-muted-foreground mt-1">可多选；只展示有来源的数据，不生成虚构机会评分</Text>
           </View>
           <Text className="text-xs text-primary font-bold">{markets.length} 个已选</Text>
         </View>
@@ -290,21 +303,34 @@ export default function AiTradeMarket() {
             )
           })}
         </View>
-        {selectedScore && (
+        {markets.length === 1 && (
           <View className="mt-4 border-t border-border border-opacity-20 pt-4">
             <View className="flex flex-row items-center justify-between mb-2">
-              <Text className="text-sm text-foreground font-bold">{selectedScore.market} · 机会评分</Text>
-              <Text className="text-xl text-primary font-black">
-                {selectedScore.total}
-                <Text className="text-xs text-muted-foreground font-normal"> / 100</Text>
-              </Text>
+              <Text className="text-sm text-foreground font-bold">可核验的市场背景数据</Text>
+              <Text className="text-xs text-primary font-bold">WTO</Text>
             </View>
-            <ScoreRow label="贸易规模" value={selectedScore.scale} />
-            <ScoreRow label="近年增速" value={selectedScore.growth} />
-            <ScoreRow label="数字服务相关度" value={selectedScore.digitalRelevance} />
-            <ScoreRow label="文化内容适配" value={selectedScore.culturalFit} />
-            <ScoreRow label="履约与合规可行性" value={selectedScore.feasibility} />
-            <Text className="text-xs text-muted-foreground leading-relaxed mt-2">{selectedScore.rationale}</Text>
+            {selectedEvidence ? (
+              <>
+                <Text className="text-xl text-primary font-black block">
+                  {formatTradeValue(selectedEvidence.value)} {selectedEvidence.unit}
+                </Text>
+                <Text className="text-xs text-muted-foreground mt-1">
+                  {selectedEvidence.geography} · {selectedEvidence.year}年数字化交付服务出口
+                </Text>
+                <Text className="text-xs text-muted-foreground leading-relaxed mt-2">
+                  这是该经济体报告的对世界服务出口，不是当地进口需求、消费者规模或根书文创市场规模；因此不换算成机会分数。
+                </Text>
+                <Text
+                  className="text-xs text-primary underline mt-2"
+                  onClick={() => openMarketSource(selectedEvidence.sourceUrl)}>
+                  查看 WTO 原始数据 ↗
+                </Text>
+              </>
+            ) : (
+              <Text className="text-xs text-muted-foreground leading-relaxed">
+                当前快照没有该经济体的可核验数据。不会用其他国家的数值代填；应补充目标市场的品类进口与渠道数据。
+              </Text>
+            )}
           </View>
         )}
       </View>
@@ -319,22 +345,37 @@ export default function AiTradeMarket() {
         </View>
         <View className="grid grid-cols-2 gap-2">
           <View className="bg-muted/60 rounded-2xl p-3">
-            <Text className="text-xl text-foreground font-black block">{latestEcommerce?.value ?? '--'}</Text>
-            <Text className="text-xs text-muted-foreground">2025中国跨境电商（万亿元）</Text>
-            <Text className="text-xs text-emerald-700 font-bold mt-1">{ecommerceChange}</Text>
+            <Text className="text-xl text-foreground font-black block">
+              {summary.latestEcommerce?.value.toFixed(2) || '—'}
+            </Text>
+            <Text className="text-xs text-muted-foreground">
+              {summary.latestEcommerce?.year || '—'}中国跨境电商（万亿元）
+            </Text>
+            <Text className="text-xs text-emerald-700 font-bold mt-1">
+              官方同比{' '}
+              {summary.ecommerceReportedGrowthPct === null ? '待核验' : `+${summary.ecommerceReportedGrowthPct}%`}
+            </Text>
           </View>
           <View className="bg-muted/60 rounded-2xl p-3">
-            <Text className="text-xl text-foreground font-black block">{latestDelivered?.value ?? '--'}</Text>
-            <Text className="text-xs text-muted-foreground">2025可数字化交付服务（亿美元）</Text>
-            <Text className="text-xs text-emerald-700 font-bold mt-1">官方口径</Text>
+            <Text className="text-xl text-foreground font-black block">
+              {summary.latestDigitalDelivered?.value.toLocaleString('zh-CN', {maximumFractionDigits: 1}) || '—'}
+            </Text>
+            <Text className="text-xs text-muted-foreground">
+              {summary.latestDigitalDelivered?.year || '—'}可数字化交付服务（亿美元）
+            </Text>
+            <Text className="text-xs text-emerald-700 font-bold mt-1">
+              官方同比 {summary.digitalReportedGrowthPct === null ? '待核验' : `+${summary.digitalReportedGrowthPct}%`}
+            </Text>
           </View>
           <View className="bg-muted/60 rounded-2xl p-3">
-            <Text className="text-xl text-foreground font-black block">{summary.digitalCagr || '--'}%</Text>
-            <Text className="text-xs text-muted-foreground">2020—2025电信计算机信息服务年均增速</Text>
+            <Text className="text-xl text-foreground font-black block">
+              {summary.telecomComputerInfoCagr === null ? '—' : `${summary.telecomComputerInfoCagr}%`}
+            </Text>
+            <Text className="text-xs text-muted-foreground">同指标端点年均增速</Text>
           </View>
           <View className="bg-muted/60 rounded-2xl p-3">
-            <Text className="text-xl text-foreground font-black block">{summary.officialCount}</Text>
-            <Text className="text-xs text-muted-foreground">已核对官方指标</Text>
+            <Text className="text-xl text-foreground font-black block">{summary.wtoLatestByMarket.length}</Text>
+            <Text className="text-xs text-muted-foreground">重点市场WTO出口记录</Text>
           </View>
         </View>
         <View
@@ -345,7 +386,7 @@ export default function AiTradeMarket() {
         </View>
         {showSources && (
           <View className="mt-3 border-t border-border border-opacity-20 pt-3">
-            {getTradeDataSnapshot().map((item) => (
+            {tradeData.map((item) => (
               <View key={item.id} className="mb-3">
                 <View className="flex flex-row items-center justify-between">
                   <Text className="text-xs text-foreground font-bold flex-1">
@@ -356,8 +397,13 @@ export default function AiTradeMarket() {
                 <Text className="text-xs text-muted-foreground leading-relaxed mt-1">
                   {item.value} {item.unit} · {item.definition}
                 </Text>
-                <Text className="text-[10px] text-primary underline mt-1" onClick={() => openSource(item.sourceUrl)}>
-                  {item.publisher} · {item.updatedAt} · 打开来源 ↗
+                <Text className="text-[10px] text-primary mt-1">
+                  {item.publisher} · {item.updatedAt} · 查看来源
+                </Text>
+                <Text
+                  className="text-[10px] text-primary underline mt-1"
+                  onClick={() => openMarketSource(item.sourceUrl)}>
+                  打开原始资料 ↗
                 </Text>
               </View>
             ))}
@@ -373,91 +419,75 @@ export default function AiTradeMarket() {
         </Text>
       </View>
 
-      {results?.map((result) => {
-        const score = scores.find((item) => item.market === result.market)
-        return (
-          <View key={result.market} className={SECTION_CLASS}>
-            <View className="flex flex-row items-center justify-between mb-4">
-              <View className="flex flex-row items-center">
-                <View className="w-9 h-9 rounded-xl bg-secondary/10 flex items-center justify-center mr-2">
-                  <View className="i-mdi-map-marker-outline text-secondary text-lg" />
-                </View>
-                <Text className="text-lg text-foreground font-bold">{result.market}</Text>
+      {results?.map((result) => (
+        <View key={result.market} className={SECTION_CLASS}>
+          <View className="flex flex-row items-center justify-between mb-4">
+            <View className="flex flex-row items-center">
+              <View className="w-9 h-9 rounded-xl bg-secondary/10 flex items-center justify-center mr-2">
+                <View className="i-mdi-map-marker-outline text-secondary text-lg" />
               </View>
-              <SourceBadge status={isDemo ? 'classroom_snapshot' : 'ai_inference'} />
+              <Text className="text-lg text-foreground font-bold">{result.market}</Text>
             </View>
-            {score && (
-              <View className="bg-violet-50 rounded-2xl p-3 mb-4">
-                <View className="flex flex-row items-center justify-between">
-                  <Text className="text-sm text-violet-900 font-bold">机会评分（AI辅助）</Text>
-                  <Text className="text-2xl text-violet-700 font-black">{score.total}</Text>
-                </View>
-                <Text className="text-xs text-violet-700 leading-relaxed mt-1">{score.rationale}</Text>
-              </View>
-            )}
-            <View className="mb-3">
-              <Text className="text-xs text-muted-foreground">消费者画像</Text>
-              <Text className="text-sm text-foreground leading-relaxed mt-2 block w-full">
-                {result.consumer_profile}
-              </Text>
-            </View>
-            <View className="mb-3">
-              <Text className="text-xs text-muted-foreground">消费场景</Text>
-              <Text className="text-sm text-foreground leading-relaxed mt-2 block w-full">
-                {result.consumption_scenario}
-              </Text>
-            </View>
-            <View className="mb-3">
-              <Text className="text-xs text-muted-foreground">文化与价格适配</Text>
-              <Text className="text-sm text-foreground leading-relaxed mt-2 block w-full">
-                {result.cultural_fit}；{result.price_fit}
-              </Text>
-            </View>
-            <View className="mb-3">
-              <Text className="text-xs text-muted-foreground">营销重点</Text>
-              <View className="flex flex-row flex-wrap gap-2 mt-1">
-                {result.marketing_focus.map((item) => (
-                  <View key={item} className="bg-muted rounded-full px-2.5 py-1">
-                    <Text className="text-xs text-foreground">{item}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-            <View className="mb-3">
-              <Text className="text-xs text-muted-foreground">风险与待核验数据</Text>
-              {[...result.potential_risks, ...result.data_to_verify].map((item) => (
-                <View key={item} className="flex flex-row items-start mt-1">
-                  <View className="i-mdi-alert-outline text-amber-600 text-sm mr-1.5 mt-0.5" />
-                  <Text className="text-sm text-foreground flex-1 leading-relaxed break-words">{item}</Text>
+            <SourceBadge
+              status={provider.marketAnalysisIsMock ? 'mock' : isDemo ? 'classroom_snapshot' : 'ai_inference'}
+            />
+          </View>
+          <View className="mb-3">
+            <Text className="text-xs text-muted-foreground">消费者画像</Text>
+            <Text className="text-sm text-foreground leading-relaxed mt-2 block w-full">{result.consumer_profile}</Text>
+          </View>
+          <View className="mb-3">
+            <Text className="text-xs text-muted-foreground">消费场景</Text>
+            <Text className="text-sm text-foreground leading-relaxed mt-2 block w-full">
+              {result.consumption_scenario}
+            </Text>
+          </View>
+          <View className="mb-3">
+            <Text className="text-xs text-muted-foreground">文化与价格适配</Text>
+            <Text className="text-sm text-foreground leading-relaxed mt-2 block w-full">
+              {result.cultural_fit}；{result.price_fit}
+            </Text>
+          </View>
+          <View className="mb-3">
+            <Text className="text-xs text-muted-foreground">营销重点</Text>
+            <View className="flex flex-row flex-wrap gap-2 mt-1">
+              {result.marketing_focus.map((item) => (
+                <View key={item} className="bg-muted rounded-full px-2.5 py-1">
+                  <Text className="text-xs text-foreground">{item}</Text>
                 </View>
               ))}
             </View>
-            <View className="bg-primary/5 rounded-2xl p-3 mb-4">
-              <Text className="text-xs text-primary font-bold">AI分析结论</Text>
-              <Text className="text-sm text-foreground leading-relaxed mt-2 block w-full">
-                {result.analysis_summary}
-              </Text>
-            </View>
-            <Text className="text-xs text-muted-foreground leading-relaxed block w-full mt-3">
-              {AI_DISCLAIMER.market}
-            </Text>
-            {result === results[results.length - 1] && (
-              <View className="flex flex-row gap-2 mt-4">
-                <View
-                  className="flex-1 rounded-xl bg-muted flex items-center justify-center py-3"
-                  onClick={handleAnalyze}>
-                  <Text className="text-sm text-foreground font-bold">重新分析</Text>
-                </View>
-                <View
-                  className="flex-1 rounded-xl bg-primary flex items-center justify-center py-3"
-                  onClick={handleSave}>
-                  <Text className="text-sm text-primary-foreground font-bold">保存并待审核</Text>
-                </View>
-              </View>
-            )}
           </View>
-        )
-      })}
+          <View className="mb-3">
+            <Text className="text-xs text-muted-foreground">风险与待核验数据</Text>
+            {[...result.potential_risks, ...result.data_to_verify].map((item) => (
+              <View key={item} className="flex flex-row items-start mt-1">
+                <View className="i-mdi-alert-outline text-amber-600 text-sm mr-1.5 mt-0.5" />
+                <Text className="text-sm text-foreground flex-1 leading-relaxed break-words">{item}</Text>
+              </View>
+            ))}
+          </View>
+          <View className="bg-primary/5 rounded-2xl p-3 mb-4">
+            <Text className="text-xs text-primary font-bold">AI分析结论</Text>
+            <Text className="text-sm text-foreground leading-relaxed mt-2 block w-full">{result.analysis_summary}</Text>
+          </View>
+          <Text className="text-xs text-muted-foreground leading-relaxed block w-full mt-3">
+            {AI_DISCLAIMER.market}
+          </Text>
+          {result === results[results.length - 1] && (
+            <View className="flex flex-row gap-2 mt-4">
+              <View
+                className="flex-1 rounded-xl bg-muted flex items-center justify-center py-3"
+                onClick={handleAnalyze}>
+                <Text className="text-sm text-foreground font-bold">重新分析</Text>
+              </View>
+              <View className="flex-1 rounded-xl bg-primary flex items-center justify-center py-3" onClick={handleSave}>
+                <Text className="text-sm text-primary-foreground font-bold">保存并待审核</Text>
+              </View>
+            </View>
+          )}
+        </View>
+      ))}
 
       <View className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-6">
         <View className="flex flex-row items-start">

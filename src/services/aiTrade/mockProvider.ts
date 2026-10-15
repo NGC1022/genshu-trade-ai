@@ -931,6 +931,10 @@ async function generateExceptionSuggestion(type: string, description: string): P
 export const mockProvider: AiTradeProvider = {
   name: '演示模式AI（Mock）',
   isMock: true,
+  marketAnalysisIsMock: true,
+  marketAnalysisProviderName: '规则演示引擎（Mock）',
+  supportIsMock: true,
+  supportProviderName: '规则演示引擎（Mock）',
   generateProductInternationalization,
   analyzeTargetMarket,
   analyzeInquiry,

@@ -95,7 +95,14 @@ async function withGuard<T>(scene: string, fn: () => Promise<T>): Promise<T> {
 /** 当前Provider信息（页面显示"演示模式"标记用） */
 export function getProviderInfo() {
   const p = getAiTradeProvider()
-  return {name: p.name, isMock: p.isMock}
+  return {
+    name: p.name,
+    isMock: p.isMock,
+    marketAnalysisIsMock: p.marketAnalysisIsMock,
+    marketAnalysisProviderName: p.marketAnalysisProviderName,
+    supportIsMock: p.supportIsMock,
+    supportProviderName: p.supportProviderName
+  }
 }
 
 /** 功能1：AI商品国际化 */
@@ -151,7 +158,9 @@ export async function generateQuoteDescription(
 /** AI跨境客服（多轮对话） */
 export async function generateSupportReply(messages: SupportMessage[]): Promise<SupportReplyResult> {
   const p = getAiTradeProvider()
-  const raw = await withGuard('AI客服', () => p.generateSupportReply(messages))
+  const raw = await withGuard('AI客服', () =>
+    p.supportIsMock ? p.generateSupportReply(messages) : minimaxProvider.generateSupportReply(messages)
+  )
   return validateSupportReply(raw)
 }
 

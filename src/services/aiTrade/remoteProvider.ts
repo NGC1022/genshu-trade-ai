@@ -2,7 +2,7 @@ import {supabase} from '@/client/supabase'
 import {mockProvider} from './mockProvider'
 import {PROMPT_MARKET_ANALYSIS} from './prompts'
 import type {AiTradeProvider} from './provider'
-import {getTradeDataSnapshot} from './tradeData'
+import {getTradeDataSnapshot, getWtoMarketEvidence} from './tradeData'
 import type {MarketAnalysisResult, ProductIntlInput} from './types'
 
 interface ChatResponse {
@@ -37,21 +37,40 @@ function asList(value: unknown): Record<string, unknown>[] {
 }
 
 async function callRemoteMarketAnalysis(input: ProductIntlInput, markets: string[]): Promise<unknown> {
-  const evidence = getTradeDataSnapshot().map((item) => ({
-    indicator: item.indicator,
-    geography: item.geography,
-    year: item.year,
-    value: item.value,
-    unit: item.unit,
-    definition: item.definition,
-    publisher: item.publisher,
-    source: item.sourceUrl
-  }))
+  const snapshot = getTradeDataSnapshot()
+  const macroEvidence = snapshot
+    .filter((item) => ['cn-cbe-2025', 'cn-digital-delivered-2025', 'cn-service-trade-2025'].includes(item.id))
+    .map((item) => ({
+      indicator: item.indicator,
+      geography: item.geography,
+      year: item.year,
+      value: item.value,
+      unit: item.unit,
+      definition: item.definition,
+      publisher: item.publisher,
+      source: item.sourceUrl
+    }))
+  const marketEvidence = markets
+    .map((market) => getWtoMarketEvidence(snapshot, market))
+    .filter((item) => Boolean(item))
+    .map((item) => ({
+      indicator: item?.indicator,
+      geography: item?.geography,
+      year: item?.year,
+      value: item?.value,
+      unit: item?.unit,
+      flow: item?.flow,
+      definition: item?.definition,
+      publisher: item?.publisher,
+      source: item?.sourceUrl
+    }))
   const userPrompt = JSON.stringify({
     task: '请分别分析每个目标市场，并严格返回JSON。',
     product: input,
     markets,
-    verified_data: evidence,
+    verified_data: [...macroEvidence, ...marketEvidence],
+    missing_market_data:
+      '当前快照不包含目标国家文创商品进口需求、线上渠道份额、竞争品牌或消费者调研数据；不得用WTO报告方服务出口替代这些指标。',
     output_shape: {
       results: markets.map((market) => ({
         market,
@@ -88,12 +107,17 @@ async function callRemoteMarketAnalysis(input: ProductIntlInput, markets: string
 
 export const remoteProvider: AiTradeProvider = {
   ...mockProvider,
-  name: 'MiniMax-M3（远程市场分析）',
-  isMock: false,
+  name: '演示模式AI（仅市场分析可选远端）',
+  isMock: true,
+  marketAnalysisIsMock: false,
+  marketAnalysisProviderName: 'MiniMax-M3（远程市场分析）',
+  supportIsMock: false,
+  supportProviderName: 'MiniMax-M3（远程客服）',
   async analyzeTargetMarket(input: ProductIntlInput, markets: string[]): Promise<MarketAnalysisResult[]> {
     const parsed = asList(await callRemoteMarketAnalysis(input, markets))
-    return markets.map((market, index) => {
-      const matched = parsed.find((item) => String(item.market || '') === market) || parsed[index] || {}
+    return markets.map((market) => {
+      const matched = parsed.find((item) => String(item.market || '').trim() === market)
+      if (!matched) throw new Error(`远端AI结果缺少目标市场：${market}`)
       return {...matched, market} as MarketAnalysisResult
     })
   }
