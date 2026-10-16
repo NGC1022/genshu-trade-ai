@@ -75,12 +75,17 @@ export function AuthProvider({children}: {children: ReactNode}) {
   }
 
   useEffect(() => {
+    // 演示账号是课堂展示的本地角色入口，即使已经配置 Supabase 也必须可用。
+    // 优先恢复演示会话，避免刷新页面后被真实 Supabase 的空会话覆盖。
+    const demoUsername = Taro.getStorageSync(DEMO_SESSION_KEY)
+    if (demoUsername && DEMO_ACCOUNTS[demoUsername]) {
+      setUser(createDemoUser(demoUsername))
+      setProfile({username: demoUsername, role: DEMO_ACCOUNTS[demoUsername].role, is_demo: true})
+      setLoading(false)
+      return
+    }
+
     if (!isSupabaseConfigured) {
-      const demoUsername = Taro.getStorageSync(DEMO_SESSION_KEY)
-      if (demoUsername) {
-        setUser(createDemoUser(demoUsername))
-        setProfile({username: demoUsername, role: DEMO_ACCOUNTS[demoUsername]?.role || 'user', is_demo: true})
-      }
       setLoading(false)
       return
     }
@@ -117,15 +122,24 @@ export function AuthProvider({children}: {children: ReactNode}) {
   }, [])
 
   const signInWithUsername = async (username: string, password: string) => {
-    if (!isSupabaseConfigured) {
-      const account = DEMO_ACCOUNTS[username]
-      if (!account || account.password !== password) {
-        return {error: new Error('预览模式账号或密码错误。可使用 demo / demo123，管理员使用 admin / admin123')}
+    // 保留课堂展示用的本地演示角色；不要把 demo 用户发送到 Supabase Auth。
+    const demoAccount = DEMO_ACCOUNTS[username]
+    if (demoAccount) {
+      if (demoAccount.password !== password) {
+        return {
+          error: new Error('演示账号或密码错误。可使用 demo / demo123、merchant / merchant123 或 admin / admin123')
+        }
       }
       Taro.setStorageSync(DEMO_SESSION_KEY, username)
       setUser(createDemoUser(username))
-      setProfile({username, role: account.role, is_demo: true})
+      setProfile({username, role: demoAccount.role, is_demo: true})
       return {error: null}
+    }
+
+    if (!isSupabaseConfigured) {
+      return {
+        error: new Error('预览模式账号或密码错误。可使用 demo / demo123、merchant / merchant123 或 admin / admin123')
+      }
     }
 
     try {
