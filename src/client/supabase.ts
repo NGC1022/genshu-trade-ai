@@ -8,7 +8,9 @@ const supabaseUrl: string = process.env.TARO_APP_SUPABASE_URL || 'https://previe
 const supabaseAnonKey: string = process.env.TARO_APP_SUPABASE_ANON_KEY || 'preview-placeholder-anon-key'
 const appId: string = process.env.TARO_APP_APP_ID || 'genshu-trade-ai-preview'
 export const isSupabaseConfigured =
-  !supabaseUrl.includes('preview-placeholder') && !supabaseAnonKey.includes('preview-placeholder')
+  Boolean(supabaseUrl.trim() && supabaseAnonKey.trim()) &&
+  !supabaseUrl.includes('preview-placeholder') &&
+  !supabaseAnonKey.includes('preview-placeholder')
 
 let noticed = false
 export const customFetch: typeof fetch = async (url: string, options: RequestInit) => {
