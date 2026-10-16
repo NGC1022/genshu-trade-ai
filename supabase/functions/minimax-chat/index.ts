@@ -1,5 +1,6 @@
-// MiniMax-M3 Chat Completions 网关代理
-// 密钥 INTEGRATIONS_API_KEY 仅在服务端读取，调用官方网关，不暴露给前端
+// MiniMax-M3 Chat Completions 服务端代理
+// 密钥 INTEGRATIONS_API_KEY 仅在服务端读取，不暴露给前端。
+// 三段式 JWT 走秒哒网关；普通 MiniMax API Key 直连官方 API。
 // 支持文本 + 图片(image_url) 多模态输入，非流式返回
 
 const ALLOWED_FIELDS = [
@@ -27,7 +28,7 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
-function normalizeGatewayToken(raw: string): string {
+function normalizeToken(raw: string): string {
   return raw.trim().replace(/^['"]|['"]$/g, '').replace(/^Bearer\s+/i, '').trim()
 }
 
@@ -55,33 +56,31 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   const rawApiKey = Deno.env.get('INTEGRATIONS_API_KEY') || ''
-  const apiKey = normalizeGatewayToken(rawApiKey)
+  const apiKey = normalizeToken(rawApiKey)
   if (!apiKey) {
     return json({error: 'Server configuration error'}, 500)
   }
-  if (apiKey.split('.').length !== 3) {
-    return json({error: 'INTEGRATIONS_API_KEY 格式错误：请填入 MiniMax 网关提供的 JWT 令牌，不要填普通 sk- API Key'}, 500)
-  }
+  const isMiaodaGatewayToken = apiKey.split('.').length === 3
+  const upstreamUrl = isMiaodaGatewayToken
+    ? 'https://app-9dlnarhqk45d-api-rLobPAn0n7m9-gateway.appmiaoda.com/v1/chat/completions'
+    : 'https://api.minimax.io/v1/chat/completions'
 
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 25_000)
-    const upstream = await fetch(
-      'https://app-9dlnarhqk45d-api-rLobPAn0n7m9-gateway.appmiaoda.com/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Gateway-Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      }
-    )
+    const headers: Record<string, string> = {'Content-Type': 'application/json'}
+    if (isMiaodaGatewayToken) headers['X-Gateway-Authorization'] = `Bearer ${apiKey}`
+    else headers.Authorization = `Bearer ${apiKey}`
+    const upstream = await fetch(upstreamUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    })
     clearTimeout(timeout)
     const text = await upstream.text()
     return new Response(text, {
-      status: upstream.ok ? 200 : 502,
+      status: upstream.ok ? 200 : upstream.status,
       headers: {...CORS_HEADERS, 'Content-Type': 'application/json'}
     })
   } catch (e) {
