@@ -20,8 +20,8 @@ export default function Tickets() {
       专题讲解服务: 'Themed Guided Tour'
     }
     if (known[text]) return known[text]
-    let result = text.replaceAll('根书文创园', 'Root Culture Park').replaceAll('根书', 'Root Calligraphy')
-    result = result.replaceAll('成人票', 'Adult Ticket').replaceAll('文化联票', 'Cultural Combo Ticket')
+    let result = text.replace(/根书文创园/g, 'Root Culture Park').replace(/根书/g, 'Root Calligraphy')
+    result = result.replace(/成人票/g, 'Adult Ticket').replace(/文化联票/g, 'Cultural Combo Ticket')
     return /[\u3400-\u9fff]/.test(result) ? 'Root Culture Ticket' : result
   }
   const [tickets, setTickets] = useState<TicketType[]>(DEMO_TICKET_TYPES)

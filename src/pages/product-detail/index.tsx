@@ -21,7 +21,7 @@ function fallbackEnglishProductName(name: string) {
   const exact = mappings.find(([zh]) => name.trim() === zh)
   if (exact) return exact[1]
   let result = name
-  for (const [zh, en] of mappings.slice(5)) result = result.replaceAll(zh, en)
+  for (const [zh, en] of mappings.slice(5)) result = result.split(zh).join(en)
   return /[\u3400-\u9fff]/.test(result) ? 'Root Culture Product' : result
 }
 

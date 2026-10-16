@@ -22,13 +22,13 @@ export default function Home() {
     if (language !== 'en') return source
     if (english?.trim()) return english.trim()
     const result = source
-      .replaceAll('根书文创园', 'Root Culture Park')
-      .replaceAll('根书艺术馆', 'Root Culture Museum')
-      .replaceAll('根书', 'Root Calligraphy')
-      .replaceAll('根宝', 'Genbao')
-      .replaceAll('成人票', 'Adult Ticket')
-      .replaceAll('文化联票', 'Cultural Combo Ticket')
-      .replaceAll('开放时间调整通知', 'Opening Hours Update')
+      .replace(/根书文创园/g, 'Root Culture Park')
+      .replace(/根书艺术馆/g, 'Root Culture Museum')
+      .replace(/根书/g, 'Root Calligraphy')
+      .replace(/根宝/g, 'Genbao')
+      .replace(/成人票/g, 'Adult Ticket')
+      .replace(/文化联票/g, 'Cultural Combo Ticket')
+      .replace(/开放时间调整通知/g, 'Opening Hours Update')
     return /[\u3400-\u9fff]/.test(result) ? 'Root Culture information' : result
   }
   const [featuredProducts, setFeaturedProducts] = useState<SKU[]>(DEMO_CATALOG.slice(0, 4))

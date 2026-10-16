@@ -1,0 +1,62 @@
+name: Deploy H5 to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TARO_ENV: h5
+      TARO_APP_PUBLIC_PATH: /genshu-trade-ai/
+      TARO_APP_AI_PROVIDER: mock
+      TARO_APP_SUPABASE_URL: https://agfymqlnswkugkejotli.supabase.co
+      TARO_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      TARO_APP_APP_ID: genshu-trade-ai-preview
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.1
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build H5
+        run: pnpm exec taro build --type h5
+      - name: Fix GitHub Pages project-site static paths
+        run: node scripts/fix-github-pages-static-paths.mjs
+      - name: Disable Jekyll processing
+        run: touch dist/.nojekyll
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

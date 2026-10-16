@@ -12,12 +12,12 @@ export default function TicketDetail() {
   const localize = (value: string | null | undefined) => {
     if (!value || language !== 'en') return value || ''
     const result = value
-      .replaceAll('根书文创园', 'Root Culture Park')
-      .replaceAll('根书艺术馆', 'Root Culture Museum')
-      .replaceAll('乐山大佛景区', 'Leshan Giant Buddha Scenic Area')
-      .replaceAll('成人票', 'Adult Ticket')
-      .replaceAll('文化联票', 'Cultural Combo Ticket')
-      .replaceAll('专题讲解服务', 'Themed Guided Tour')
+      .replace(/根书文创园/g, 'Root Culture Park')
+      .replace(/根书艺术馆/g, 'Root Culture Museum')
+      .replace(/乐山大佛景区/g, 'Leshan Giant Buddha Scenic Area')
+      .replace(/成人票/g, 'Adult Ticket')
+      .replace(/文化联票/g, 'Cultural Combo Ticket')
+      .replace(/专题讲解服务/g, 'Themed Guided Tour')
     return /[\u3400-\u9fff]/.test(result) ? 'Root Culture Ticket' : result
   }
   const router = useRouter()
