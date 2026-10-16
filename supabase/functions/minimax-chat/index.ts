@@ -55,7 +55,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({error: 'Invalid request body'}, 400)
   }
 
-  const rawApiKey = Deno.env.get('INTEGRATIONS_API_KEY') || ''
+  const rawApiKey = Deno.env.get('INTEGRATIONS_API_KEYS') || Deno.env.get('INTEGRATIONS_API_KEY') || ''
   const apiKey = normalizeToken(rawApiKey)
   if (!apiKey) {
     return json({error: 'Server configuration error'}, 500)
