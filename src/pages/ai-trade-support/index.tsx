@@ -3,17 +3,16 @@
 // 支持发送文创商品图片，由 MiniMax-M3 多模态模型识别并解答
 import {Image, ScrollView, Text, View} from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import {useCallback, useRef, useState} from 'react'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {isSupabaseConfigured, supabase} from '@/client/supabase'
 import {useAuth} from '@/contexts/AuthContext'
+import {useLanguage} from '@/hooks/useLanguage'
 import type {SupportMessage} from '@/services/aiTrade'
 import {analyzeProductImage, generateSupportReply, getProviderInfo} from '@/services/aiTrade'
 import {translateText} from '@/utils/translate'
 import {selectMediaFiles, uploadToSupabase} from '@/utils/upload'
 
 // 预置快捷问题（演示流程引导）
-const QUICK_QUESTIONS = ['根书是什么技艺？', '如何处理海外英文询盘？', '如何给海外客户报价？', '我想把产品卖到美国']
-
 interface ChatItem extends SupportMessage {
   suggestions?: string[]
   imageResult?: string // 图片识别后的结构化描述（AI消息）
@@ -25,16 +24,47 @@ interface ChatItem extends SupportMessage {
 const IMAGE_BUCKET = 'support_images'
 
 export default function AiTradeSupport() {
+  const language = useLanguage()
+  const ui = useCallback((zh: string, en: string) => (language === 'en' ? en : zh), [language])
+  const quickQuestions = useMemo(
+    () =>
+      language === 'en'
+        ? [
+            'What is Root Calligraphy?',
+            'How should I handle an English inquiry?',
+            'How do I quote for overseas buyers?',
+            'I want to sell in the United States'
+          ]
+        : ['根书是什么技艺？', '如何处理海外英文询盘？', '如何给海外客户报价？', '我想把产品卖到美国'],
+    [language]
+  )
   const {user} = useAuth()
   const providerInfo = getProviderInfo()
   const [messages, setMessages] = useState<ChatItem[]>([
     {
       role: 'assistant',
-      content:
-        '您好！我是"根生万象"AI跨境客服，可以解答非遗文创跨境贸易相关咨询（商品国际化、市场分析、询盘处理、智能报价、个性定制合作）。您也可以发送文创商品图片，我会为您识别并分析。请问有什么可以帮您？',
-      suggestions: QUICK_QUESTIONS
+      content: ui(
+        '您好！我是“根生万象”AI跨境客服，可以解答非遗文创跨境贸易相关咨询（商品国际化、市场分析、询盘处理、智能报价、个性定制合作）。您也可以发送文创商品图片，我会为您识别并分析。请问有什么可以帮您？',
+        'Hello! I am the Genshu AI Trade Support assistant. I can help with product localization, market research, inquiries, smart quotes, and custom collaborations for heritage products. You can also send a product image for analysis. How can I help?'
+      ),
+      suggestions: quickQuestions
     }
   ])
+  useEffect(() => {
+    setMessages((current) => {
+      if (current.length !== 1 || current[0].role !== 'assistant') return current
+      return [
+        {
+          ...current[0],
+          content: ui(
+            '您好！我是“根生万象”AI跨境客服，可以解答非遗文创跨境贸易相关咨询（商品国际化、市场分析、询盘处理、智能报价、个性定制合作）。您也可以发送文创商品图片，我会为您识别并分析。请问有什么可以帮您？',
+            'Hello! I am the Genshu AI Trade Support assistant. I can help with product localization, market research, inquiries, smart quotes, and custom collaborations for heritage products. You can also send a product image for analysis. How can I help?'
+          ),
+          suggestions: quickQuestions
+        }
+      ]
+    })
+  }, [quickQuestions, ui])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -78,11 +108,14 @@ export default function AiTradeSupport() {
   const sendImage = useCallback(async () => {
     if (sendingRef.current || uploading) return
     if (!isSupabaseConfigured) {
-      Taro.showToast({title: '图片识别尚未配置服务器连接', icon: 'none'})
+      Taro.showToast({
+        title: ui('图片识别尚未配置服务器连接', 'Image analysis is not configured on the server yet'),
+        icon: 'none'
+      })
       return
     }
     if (!user) {
-      Taro.showToast({title: '请登录后再上传图片', icon: 'none'})
+      Taro.showToast({title: ui('请登录后再上传图片', 'Please sign in before uploading an image'), icon: 'none'})
       return
     }
     try {
@@ -92,7 +125,7 @@ export default function AiTradeSupport() {
       setUploading(true)
       const res = await uploadToSupabase(file, {bucket: IMAGE_BUCKET, userId: user.id})
       if (!res.success || !res.data?.path) {
-        Taro.showToast({title: '图片上传失败', icon: 'none'})
+        Taro.showToast({title: ui('图片上传失败', 'Image upload failed'), icon: 'none'})
         return
       }
       const publicUrl = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(res.data.path).data.publicUrl
@@ -133,7 +166,7 @@ export default function AiTradeSupport() {
     } finally {
       setUploading(false)
     }
-  }, [uploading, user, scrollBottom])
+  }, [uploading, user, scrollBottom, ui])
 
   // 保存客服对话记录（登录用户，type=inquiry 不合适，此处仅本地体验，不入库）
   // 说明：客服会话为即时咨询，不写入 ai_trade_records 业务记录，避免污染真实业务数据
@@ -168,8 +201,13 @@ export default function AiTradeSupport() {
         />
         <Text className={`text-xs flex-1 ${providerInfo.supportIsMock ? 'text-amber-700' : 'text-emerald-700'}`}>
           {providerInfo.supportIsMock
-            ? '课堂演示模式：客服回复使用规则模拟；图片识别需配置服务端模型。'
-            : `远端客服：${providerInfo.supportProviderName} · 图片识别使用同一模型服务，交易事实仍需人工确认。`}
+            ? ui(
+                '课堂演示模式：客服回复使用规则模拟；图片识别需配置服务端模型。',
+                'Classroom demo mode: replies use rules; server-side model setup is required for image analysis.'
+              )
+            : language === 'en'
+              ? `Remote support: ${providerInfo.supportProviderName} · image analysis uses the same model; verify trade facts manually.`
+              : `远端客服：${providerInfo.supportProviderName} · 图片识别使用同一模型服务，交易事实仍需人工确认。`}
         </Text>
       </View>
 
@@ -177,7 +215,10 @@ export default function AiTradeSupport() {
       <View className="bg-muted/60 border-b border-border border-opacity-10 px-4 py-2 flex flex-row items-center">
         <View className="i-mdi-translate text-base text-muted-foreground mr-1.5" />
         <Text className="text-xs text-muted-foreground flex-1">
-          客服语言：中文/English（已启用互译）· 日本語/Español（扩展预留）· 原文与翻译分开展示，不覆盖原文
+          {ui(
+            '客服语言：中文/English（已启用互译）· 日本語/Español（扩展预留）· 原文与翻译分开展示，不覆盖原文',
+            'Support languages: Chinese / English (translation enabled) · Japanese / Spanish (planned). Original text is preserved.'
+          )}
         </Text>
       </View>
 
@@ -231,17 +272,21 @@ export default function AiTradeSupport() {
                         {m.translating ? (
                           <>
                             <View className="i-mdi-loading animate-spin text-base text-secondary mr-1.5" />
-                            <Text className="text-xs text-secondary">翻译中...</Text>
+                            <Text className="text-xs text-secondary">{ui('翻译中...', 'Translating...')}</Text>
                           </>
                         ) : m.translateError ? (
                           <>
                             <View className="i-mdi-refresh text-base text-destructive mr-1.5" />
-                            <Text className="text-xs text-destructive">翻译加载失败，点击重试</Text>
+                            <Text className="text-xs text-destructive">
+                              {ui('翻译加载失败，点击重试', 'Translation failed. Tap to retry.')}
+                            </Text>
                           </>
                         ) : (
                           <>
                             <View className="i-mdi-translate text-base text-secondary mr-1.5" />
-                            <Text className="text-xs text-secondary">查看英文翻译</Text>
+                            <Text className="text-xs text-secondary">
+                              {ui('查看英文翻译', 'View English translation')}
+                            </Text>
                           </>
                         )}
                       </View>
@@ -270,7 +315,9 @@ export default function AiTradeSupport() {
               </View>
               <View className="bg-card rounded-[24px] rounded-tl-lg px-4 py-3 border border-border border-opacity-10">
                 <Text className="text-base text-muted-foreground">
-                  {uploading ? '正在上传图片...' : 'AI正在分析，请稍候...'}
+                  {uploading
+                    ? ui('正在上传图片...', 'Uploading image...')
+                    : ui('AI正在分析，请稍候...', 'AI is analysing. Please wait...')}
                 </Text>
               </View>
             </View>
@@ -295,7 +342,7 @@ export default function AiTradeSupport() {
           <View className="flex-1 min-w-0 bg-muted/60 rounded-full border border-border border-opacity-20 px-4 py-2 flex flex-row items-center overflow-hidden">
             <input
               className="flex-1 min-w-0 text-base text-foreground bg-transparent outline-none"
-              placeholder="输入跨境业务问题..."
+              placeholder={ui('输入跨境业务问题...', 'Ask a cross-border trade question...')}
               value={input}
               onInput={(e) => {
                 const ev = e as any
@@ -311,11 +358,14 @@ export default function AiTradeSupport() {
               sending || !input.trim() ? 'bg-primary/50' : 'bg-primary'
             }`}
             onClick={() => send(input)}>
-            <Text className="text-base text-primary-foreground font-bold">{sending ? '...' : '发送'}</Text>
+            <Text className="text-base text-primary-foreground font-bold">{sending ? '...' : ui('发送', 'Send')}</Text>
           </View>
         </View>
         <Text className="text-xs text-muted-foreground mt-2 px-2 block">
-          支持发送文创商品图片识别 · AI回复仅作业务参考，具体信息请以人工确认为准
+          {ui(
+            '支持发送文创商品图片识别 · AI回复仅作业务参考，具体信息请以人工确认为准',
+            'Product images are supported · AI replies are for reference only; verify final details with a person.'
+          )}
         </Text>
       </View>
     </View>

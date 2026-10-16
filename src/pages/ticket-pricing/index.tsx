@@ -4,11 +4,14 @@ import {useCallback, useEffect, useState} from 'react'
 import {DEMO_TICKET_TYPES} from '@/data/demoCatalog'
 import {getTicketTypeDetail} from '@/db/api'
 import type {TicketType} from '@/db/types'
+import {useLanguage} from '@/hooks/useLanguage'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 
 type TicketTypeKey = 'adult' | 'child_free' | 'teen' | 'senior' | 'student' | 'disabled' | 'hmt' | 'foreigner'
 
 export default function TicketPricing() {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
   const router = useRouter()
   const {id} = router.params
   const [ticket, setTicket] = useState<TicketType | null>(
@@ -40,74 +43,83 @@ export default function TicketPricing() {
   const ticketTypes = [
     {
       type: 'adult' as TicketTypeKey,
-      name: '成人票',
+      name: ui('成人票', 'Adult'),
       price: basePrice,
-      discount: '原价',
-      description: '18周岁以上成人',
-      conditions: '需出示有效身份证件',
+      discount: ui('原价', 'Standard'),
+      description: ui('18周岁以上成人', 'Adults aged 18 and above'),
+      conditions: ui('需出示有效身份证件', 'Valid identity document required'),
       icon: 'i-mdi-account'
     },
     {
       type: 'child_free' as TicketTypeKey,
-      name: '儿童免票',
+      name: ui('儿童免票', 'Child (free)'),
       price: 0,
-      discount: '免费',
-      description: '6周岁及以下儿童',
-      conditions: '需由成人陪同，出示户口本或身份证',
+      discount: ui('免费', 'Free'),
+      description: ui('6周岁及以下儿童', 'Children aged 6 and under'),
+      conditions: ui(
+        '需由成人陪同，出示户口本或身份证',
+        'Must be accompanied by an adult; household register or ID required'
+      ),
       icon: 'i-mdi-baby-face'
     },
     {
       type: 'teen' as TicketTypeKey,
-      name: '青少年票',
+      name: ui('青少年票', 'Youth'),
       price: Math.floor(basePrice * 0.5),
-      discount: '5折',
-      description: '7-18周岁以下未成年人',
-      conditions: '需出示身份证或学生证',
+      discount: ui('5折', '50% off'),
+      description: ui('7-18周岁以下未成年人', 'Minors aged 7–17'),
+      conditions: ui('需出示身份证或学生证', 'ID card or student card required'),
       icon: 'i-mdi-human-child'
     },
     {
       type: 'senior' as TicketTypeKey,
-      name: '敬老票',
+      name: ui('敬老票', 'Senior'),
       price: Math.floor(basePrice * 0.5),
-      discount: '5折',
-      description: '60周岁以上老年人',
-      conditions: '需出示身份证或老年证',
+      discount: ui('5折', '50% off'),
+      description: ui('60周岁以上老年人', 'Visitors aged 60 and above'),
+      conditions: ui('需出示身份证或老年证', 'ID card or senior card required'),
       icon: 'i-mdi-human-cane'
     },
     {
       type: 'student' as TicketTypeKey,
-      name: '大学生票',
+      name: ui('大学生票', 'University student'),
       price: Math.floor(basePrice * 0.7),
-      discount: '7折',
-      description: '全日制在校大学生（含研究生）',
-      conditions: '需出示学生证，限本人使用（记得携带学生证）',
+      discount: ui('7折', '30% off'),
+      description: ui('全日制在校大学生（含研究生）', 'Full-time university students, including graduate students'),
+      conditions: ui(
+        '需出示学生证，限本人使用（记得携带学生证）',
+        'Student card required; valid for the named student only'
+      ),
       icon: 'i-mdi-school'
     },
     {
       type: 'disabled' as TicketTypeKey,
-      name: '身心障碍票',
+      name: ui('身心障碍票', 'Accessibility ticket'),
       price: Math.floor(basePrice * 0.5),
-      discount: '5折',
-      description: '持有效残疾证人士',
-      conditions: '需出示残疾证，陪同人员1名享同等优惠',
+      discount: ui('5折', '50% off'),
+      description: ui('持有效残疾证人士', 'Visitors with a valid disability certificate'),
+      conditions: ui(
+        '需出示残疾证，陪同人员1名享同等优惠',
+        'Disability certificate required; one companion receives the same discount'
+      ),
       icon: 'i-mdi-wheelchair-accessibility'
     },
     {
       type: 'hmt' as TicketTypeKey,
-      name: '港澳台票',
+      name: ui('港澳台票', 'Hong Kong, Macao & Taiwan'),
       price: Math.floor(basePrice * 0.7),
-      discount: '7折',
-      description: '港澳台同胞',
-      conditions: '需出示港澳通行证或台胞证',
+      discount: ui('7折', '30% off'),
+      description: ui('港澳台同胞', 'Visitors from Hong Kong, Macao, or Taiwan'),
+      conditions: ui('需出示港澳通行证或台胞证', 'Valid travel permit required'),
       icon: 'i-mdi-passport'
     },
     {
       type: 'foreigner' as TicketTypeKey,
-      name: '外籍人士票',
+      name: ui('外籍人士票', 'International visitor'),
       price: Math.floor(basePrice * 0.9),
-      discount: '9折',
-      description: '外国友人',
-      conditions: '需出示护照',
+      discount: ui('9折', '10% off'),
+      description: ui('外国友人', 'International visitors'),
+      conditions: ui('需出示护照', 'Passport required'),
       icon: 'i-mdi-earth'
     }
   ]
@@ -136,7 +148,7 @@ export default function TicketPricing() {
   if (!ticket) {
     return (
       <View className="min-h-screen bg-gradient-subtle flex items-center justify-center">
-        <Text className="text-muted-foreground">加载中...</Text>
+        <Text className="text-muted-foreground">{ui('加载中...', 'Loading...')}</Text>
       </View>
     )
   }
@@ -164,20 +176,25 @@ export default function TicketPricing() {
 
           {/* 景点介绍区块 */}
           <View className="bg-card rounded-xl p-4 mb-4 shadow-card">
-            <Text className="text-base font-bold text-accent">景点介绍</Text>
+            <Text className="text-base font-bold text-accent">{ui('景点介绍', 'Attraction introduction')}</Text>
 
             <View className="space-y-4 mt-4">
               <View className="bg-muted bg-opacity-30 p-4 rounded-xl border border-border border-opacity-30">
-                <Text className="text-base font-bold text-foreground">联名景区付费景点</Text>
+                <Text className="text-base font-bold text-foreground">
+                  {ui('联名景区付费景点', 'Partner attractions')}
+                </Text>
 
                 <View className="mt-2">
                   <Text className="text-base text-muted-foreground leading-relaxed">
-                    包含根书艺术体验馆、古法造纸坊、活字印刷体验区。周边包含：青龙湖湿地公园、云雾山观景台等。
+                    {ui(
+                      '包含根书艺术体验馆、古法造纸坊、活字印刷体验区。周边包含：青龙湖湿地公园、云雾山观景台等。',
+                      'Includes the Root Calligraphy experience hall, traditional papermaking workshop, and movable-type printing area. Nearby attractions include Qinglong Lake Wetland Park and Yunwu Mountain lookout.'
+                    )}
                   </Text>
                 </View>
               </View>
               <View className="bg-secondary bg-opacity-10 p-4 rounded-xl border border-secondary border-opacity-20">
-                <Text className="text-base font-bold text-accent">持票福利</Text>
+                <Text className="text-base font-bold text-accent">{ui('持票福利', 'Ticket benefits')}</Text>
 
                 <View className="mt-2">
                   <Text className="text-base text-muted-foreground leading-relaxed">
@@ -193,13 +210,18 @@ export default function TicketPricing() {
           <View className="bg-blue-50 rounded-xl p-4 mb-4 border-2 border-blue-200">
             <View className="flex items-center">
               <View className="i-mdi-information text-2xl text-blue-600 mr-2" />
-              <Text className="text-base font-bold text-blue-900">票价说明</Text>
+              <Text className="text-base font-bold text-blue-900">{ui('票价说明', 'Price information')}</Text>
             </View>
 
             <View className="space-y-2 mt-4">
               <View className="flex items-start">
                 <View className="i-mdi-check-circle text-lg text-blue-600 mr-2 mt-0.5" />
-                <Text className="text-base text-blue-900 flex-1">票价已包含所有税费及入场费用，无需额外支付</Text>
+                <Text className="text-base text-blue-900 flex-1">
+                  {ui(
+                    '票价已包含所有税费及入场费用，无需额外支付',
+                    'The ticket price includes taxes and admission; no extra payment is required.'
+                  )}
+                </Text>
               </View>
               <View className="flex items-start">
                 <View className="i-mdi-check-circle text-lg text-blue-600 mr-2 mt-0.5" />
@@ -209,14 +231,19 @@ export default function TicketPricing() {
               </View>
               <View className="flex items-start">
                 <View className="i-mdi-check-circle text-lg text-blue-600 mr-2 mt-0.5" />
-                <Text className="text-base text-blue-900 flex-1">门票一经售出，概不退换。如遇特殊情况请联系客服</Text>
+                <Text className="text-base text-blue-900 flex-1">
+                  {ui(
+                    '门票一经售出，概不退换。如遇特殊情况请联系客服',
+                    'Tickets are non-refundable after purchase. Contact support for exceptional circumstances.'
+                  )}
+                </Text>
               </View>
             </View>
           </View>
 
           {/* 票种选择 */}
           <View className="bg-card rounded-xl p-4 mb-4 shadow-card">
-            <Text className="text-base font-bold text-foreground">选择票种</Text>
+            <Text className="text-base font-bold text-foreground">{ui('选择票种', 'Choose ticket type')}</Text>
 
             <View className="space-y-3 mt-4">
               {ticketTypes.map((type) => (
@@ -268,10 +295,10 @@ export default function TicketPricing() {
 
           {/* 购买数量 */}
           <View className="bg-card rounded-xl p-4 mb-4 shadow-card">
-            <Text className="text-base font-bold text-foreground">购买数量</Text>
+            <Text className="text-base font-bold text-foreground">{ui('购买数量', 'Quantity')}</Text>
 
             <View className="flex items-center justify-between mt-4">
-              <Text className="text-base text-muted-foreground">选择数量</Text>
+              <Text className="text-base text-muted-foreground">{ui('选择数量', 'Select quantity')}</Text>
               <View className="flex items-center">
                 <View
                   className="w-8 h-8 bg-muted rounded-full flex items-center justify-center"
@@ -293,7 +320,9 @@ export default function TicketPricing() {
             <View className="flex items-center justify-between" onClick={() => setShowPolicyDetail(!showPolicyDetail)}>
               <View className="flex items-center">
                 <View className="i-mdi-shield-check text-xl text-primary mr-2" />
-                <Text className="text-base font-bold text-foreground">退款与取消政策</Text>
+                <Text className="text-base font-bold text-foreground">
+                  {ui('退款与取消政策', 'Refund and cancellation policy')}
+                </Text>
               </View>
               <View
                 className={`i-mdi-chevron-down text-xl text-muted-foreground transition-transform ${showPolicyDetail ? 'rotate-180' : ''}`}
@@ -303,7 +332,9 @@ export default function TicketPricing() {
             {showPolicyDetail && (
               <View className="mt-4 pt-4 border-t border-border space-y-3">
                 <View>
-                  <Text className="text-base font-bold text-foreground mb-2">退款说明</Text>
+                  <Text className="text-base font-bold text-foreground mb-2">
+                    {ui('退款说明', 'Refund information')}
+                  </Text>
                   <View className="space-y-2">
                     <View className="flex items-start">
                       <View className="w-1.5 h-1.5 bg-primary rounded-full mr-2 mt-1.5" />
@@ -325,7 +356,9 @@ export default function TicketPricing() {
                 </View>
 
                 <View>
-                  <Text className="text-base font-bold text-foreground mb-2">特殊情况处理</Text>
+                  <Text className="text-base font-bold text-foreground mb-2">
+                    {ui('特殊情况处理', 'Special circumstances')}
+                  </Text>
                   <View className="space-y-2">
                     <View className="flex items-start">
                       <View className="w-1.5 h-1.5 bg-primary rounded-full mr-2 mt-1.5" />
@@ -354,7 +387,7 @@ export default function TicketPricing() {
 
           {/* 使用须知 */}
           <View className="bg-card rounded-xl p-4 shadow-card">
-            <Text className="text-base font-bold text-foreground mb-3">使用须知</Text>
+            <Text className="text-base font-bold text-foreground mb-3">{ui('使用须知', 'Important information')}</Text>
             <View className="space-y-2">
               <View className="flex items-start py-1">
                 <View className="i-mdi-clock-outline text-lg text-primary mr-2 mt-0.5" />

@@ -4,8 +4,21 @@ import {useCallback, useState} from 'react'
 import {DEMO_TICKET_TYPES} from '@/data/demoCatalog'
 import {getTicketTypeList} from '@/db/api'
 import type {TicketType} from '@/db/types'
+import {useLanguage} from '@/hooks/useLanguage'
+import {t} from '@/utils/i18n'
 
 export default function Tickets() {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
+  const localizeTicket = (text: string | null | undefined) => {
+    if (!text || language !== 'en') return text || ''
+    const known: Record<string, string> = {
+      乐山大佛景区门票: 'Leshan Giant Buddha Scenic Area Ticket',
+      根书艺术馆深度讲解: 'Root Calligraphy Museum Guided Tour',
+      联票: 'Combo Ticket'
+    }
+    return known[text] || (/[\u3400-\u9fff]/.test(text) ? t('translation_pending') : text)
+  }
   const [tickets, setTickets] = useState<TicketType[]>(DEMO_TICKET_TYPES)
 
   const loadData = useCallback(async () => {
@@ -24,8 +37,12 @@ export default function Tickets() {
   return (
     <View className="bg-gradient-subtle min-h-screen">
       <View className="bg-gradient-primary p-6 mb-4">
-        <Text className="text-3xl font-black text-white block mb-6 tracking-wide">文旅门票</Text>
-        <Text className="text-base text-white opacity-90 block">体验根书艺术 · 探索文化之旅</Text>
+        <Text className="text-3xl font-black text-white block mb-6 tracking-wide">
+          {ui('文旅门票', 'Cultural Experience Tickets')}
+        </Text>
+        <Text className="text-base text-white opacity-90 block">
+          {ui('体验根书艺术 · 探索文化之旅', 'Experience Root Calligraphy · Explore a cultural journey')}
+        </Text>
       </View>
 
       <ScrollView className="flex-1 px-4" scrollY>
@@ -37,13 +54,15 @@ export default function Tickets() {
             {ticket.image_url && <Image src={ticket.image_url} className="w-full h-48" mode="aspectFill" lazyLoad />}
             <View className="p-4">
               <View className="flex items-start justify-between mb-2">
-                <Text className="text-lg font-bold text-foreground flex-1">{ticket.name}</Text>
+                <Text className="text-lg font-bold text-foreground flex-1">{localizeTicket(ticket.name)}</Text>
                 <View className="bg-primary px-3 py-1 rounded-full ml-2">
-                  <Text className="text-base text-white font-bold">特惠</Text>
+                  <Text className="text-base text-white font-bold">{ui('特惠', 'Special')}</Text>
                 </View>
               </View>
 
-              <Text className="text-base text-muted-foreground mb-3 line-clamp-2">{ticket.description}</Text>
+              <Text className="text-base text-muted-foreground mb-3 line-clamp-2">
+                {localizeTicket(ticket.description)}
+              </Text>
 
               <View className="flex items-center justify-between">
                 <View className="flex items-center">
@@ -53,13 +72,18 @@ export default function Tickets() {
                   )}
                 </View>
                 <View className="bg-gradient-primary px-6 py-2 rounded-full">
-                  <Text className="text-base text-white font-medium">立即购买</Text>
+                  <Text className="text-base text-white font-medium">{ui('立即购买', 'Buy now')}</Text>
                 </View>
               </View>
 
               {ticket.validity_days && (
                 <View className="mt-3 pt-3 border-t border-border">
-                  <Text className="text-base text-muted-foreground">有效期：购买后{ticket.validity_days}天内有效</Text>
+                  <Text className="text-base text-muted-foreground">
+                    {ui(
+                      `有效期：购买后${ticket.validity_days}天内有效`,
+                      `Valid for ${ticket.validity_days} days after purchase`
+                    )}
+                  </Text>
                 </View>
               )}
             </View>

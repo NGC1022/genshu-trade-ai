@@ -4,8 +4,16 @@ import {useCallback, useEffect, useState} from 'react'
 import {DEMO_TICKET_TYPES} from '@/data/demoCatalog'
 import {getTicketTypeDetail} from '@/db/api'
 import type {TicketType} from '@/db/types'
+import {useLanguage} from '@/hooks/useLanguage'
+import {t} from '@/utils/i18n'
 
 export default function TicketDetail() {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
+  const localize = (value: string | null | undefined) => {
+    if (!value || language !== 'en') return value || ''
+    return /[\u3400-\u9fff]/.test(value) ? t('translation_pending') : value
+  }
   const router = useRouter()
   const {id} = router.params
   const [ticket, setTicket] = useState<TicketType | null>(
@@ -48,7 +56,7 @@ export default function TicketDetail() {
   if (!ticket && !loadError) {
     return (
       <View className="min-h-screen bg-gradient-subtle flex items-center justify-center">
-        <Text className="text-muted-foreground">加载中...</Text>
+        <Text className="text-muted-foreground">{ui('加载中...', 'Loading...')}</Text>
       </View>
     )
   }
@@ -56,8 +64,10 @@ export default function TicketDetail() {
   if (!ticket && loadError) {
     return (
       <View className="min-h-screen bg-gradient-subtle flex flex-col items-center justify-center px-6">
-        <Text className="text-lg font-bold text-foreground mb-2">暂时找不到该门票</Text>
-        <Text className="text-sm text-muted-foreground text-center mb-4">请返回门票列表后重新选择票种。</Text>
+        <Text className="text-lg font-bold text-foreground mb-2">{ui('暂时找不到该门票', 'Ticket not found')}</Text>
+        <Text className="text-sm text-muted-foreground text-center mb-4">
+          {ui('请返回门票列表后重新选择票种。', 'Return to the ticket list and choose another ticket.')}
+        </Text>
         <Button className="bg-primary text-white rounded-full px-6 py-2" onClick={() => Taro.navigateBack()}>
           返回门票列表
         </Button>
@@ -73,7 +83,7 @@ export default function TicketDetail() {
         {ticket.image_url && <Image src={ticket.image_url} className="w-full h-64" mode="aspectFill" />}
 
         <View className="bg-card rounded-t-3xl p-6 mt--4">
-          <Text className="text-2xl font-bold text-foreground">{ticket.name}</Text>
+          <Text className="text-2xl font-bold text-foreground">{localize(ticket.name)}</Text>
 
           <View className="flex items-center mt-3">
             <Text className="text-3xl font-bold text-primary mr-3">¥{ticket.price}</Text>
@@ -83,7 +93,7 @@ export default function TicketDetail() {
           </View>
 
           <View className="border-t border-border pt-4 mt-6 mb-4">
-            <Text className="text-xl font-bold text-accent block mb-4">票种包含内容</Text>
+            <Text className="text-xl font-bold text-accent block mb-4">{ui('票种包含内容', 'What is included')}</Text>
 
             <View className="space-y-4">
               {ticket.name.includes('联票') ? (
@@ -112,7 +122,7 @@ export default function TicketDetail() {
                 <View className="bg-primary/5 p-6 rounded-2xl border border-primary/10">
                   <View className="flex flex-row items-center">
                     <View className="i-mdi-information-outline text-2xl text-primary mr-3" />
-                    <Text className="text-lg font-black text-foreground">{ticket.description}</Text>
+                    <Text className="text-lg font-black text-foreground">{localize(ticket.description)}</Text>
                   </View>
                 </View>
               )}
@@ -120,7 +130,9 @@ export default function TicketDetail() {
           </View>
 
           <View className="border-t border-border pt-4 mb-4">
-            <Text className="text-xl font-bold text-accent block mb-4">景点介绍</Text>
+            <Text className="text-xl font-bold text-accent block mb-4">
+              {ui('景点介绍', 'Attraction introduction')}
+            </Text>
 
             <View className="space-y-6 mt-6">
               <View className="bg-muted bg-opacity-50 p-6 rounded-xl border border-border">
@@ -133,7 +145,7 @@ export default function TicketDetail() {
                 </View>
               </View>
               <View className="bg-secondary bg-opacity-20 p-6 rounded-xl border border-secondary border-opacity-30">
-                <Text className="text-base font-bold text-accent block mb-4">持票福利</Text>
+                <Text className="text-base font-bold text-accent block mb-4">{ui('持票福利', 'Ticket benefits')}</Text>
 
                 <View>
                   <Text className="text-base text-muted-foreground leading-relaxed">
@@ -146,7 +158,7 @@ export default function TicketDetail() {
           </View>
 
           <View className="border-t border-border pt-4 mb-4">
-            <Text className="text-base font-bold text-accent">使用须知</Text>
+            <Text className="text-base font-bold text-accent">{ui('使用须知', 'Important information')}</Text>
 
             <View className="space-y-2 mt-3">
               {ticket.validity_days && (

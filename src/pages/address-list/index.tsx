@@ -4,8 +4,11 @@ import {useCallback, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {deleteAddress, getUserAddresses, setDefaultAddress} from '@/db/api'
 import type {Address} from '@/db/types'
+import {useLanguage} from '@/hooks/useLanguage'
 
 export default function AddressList() {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
   const router = useRouter()
   const {user} = useAuth()
   const {select, target} = router.params
@@ -42,28 +45,28 @@ export default function AddressList() {
     try {
       const {error} = await setDefaultAddress(id, user.id)
       if (error) throw error
-      Taro.showToast({title: '设置成功', icon: 'success'})
+      Taro.showToast({title: ui('设置成功', 'Default address updated'), icon: 'success'})
       setActiveId('')
       loadAddresses()
     } catch (error: any) {
-      Taro.showToast({title: error.message || '设置失败', icon: 'none'})
+      Taro.showToast({title: error.message || ui('设置失败', 'Could not update the default address'), icon: 'none'})
     }
   }
 
   const handleDelete = (id: string) => {
     Taro.showModal({
-      title: '确认删除',
-      content: '确定要删除这个地址吗？',
+      title: ui('确认删除', 'Delete address'),
+      content: ui('确定要删除这个地址吗？', 'Delete this address?'),
       success: async (res) => {
         if (res.confirm) {
           try {
             const {error} = await deleteAddress(id)
             if (error) throw error
-            Taro.showToast({title: '删除成功', icon: 'success'})
+            Taro.showToast({title: ui('删除成功', 'Address deleted'), icon: 'success'})
             setActiveId('')
             loadAddresses()
           } catch (error: any) {
-            Taro.showToast({title: error.message || '删除失败', icon: 'none'})
+            Taro.showToast({title: error.message || ui('删除失败', 'Could not delete the address'), icon: 'none'})
           }
         }
       }
@@ -76,11 +79,11 @@ export default function AddressList() {
         {addresses.length === 0 ? (
           <View className="flex flex-col items-center justify-center py-20">
             <View className="i-mdi-map-marker-outline text-6xl text-muted-foreground mb-4" />
-            <Text className="text-muted-foreground mb-4">暂无收货地址</Text>
+            <Text className="text-muted-foreground mb-4">{ui('暂无收货地址', 'No delivery addresses yet')}</Text>
             <Button
               className="bg-gradient-primary text-white rounded-full px-8 py-2 text-base break-keep"
               onClick={handleAdd}>
-              添加地址
+              {ui('添加地址', 'Add address')}
             </Button>
           </View>
         ) : (
@@ -107,13 +110,13 @@ export default function AddressList() {
                       {isDefault ? (
                         <View className="flex flex-row items-center bg-primary rounded-full px-2 py-0.5">
                           <View className="i-mdi-star text-xs text-primary-foreground mr-0.5" />
-                          <Text className="text-xs text-primary-foreground font-bold">默认</Text>
+                          <Text className="text-xs text-primary-foreground font-bold">{ui('默认', 'Default')}</Text>
                         </View>
                       ) : null}
                       {address.is_overseas ? (
                         <View className="flex flex-row items-center bg-secondary rounded-full px-2 py-0.5 ml-1">
                           <View className="i-mdi-earth text-xs text-secondary-foreground mr-0.5" />
-                          <Text className="text-xs text-secondary-foreground font-bold">海外</Text>
+                          <Text className="text-xs text-secondary-foreground font-bold">{ui('海外', 'Overseas')}</Text>
                         </View>
                       ) : null}
                     </View>
@@ -131,7 +134,7 @@ export default function AddressList() {
                     <View className="i-mdi-map-marker text-lg text-primary mt-0.5 mr-2 flex-shrink-0" />
                     <Text className="text-base text-foreground leading-relaxed flex-1">
                       {address.is_overseas
-                        ? `${address.country || '海外'} ${address.overseas_detail || ''}`
+                        ? `${language === 'en' ? address.country || 'Overseas' : address.country || '海外'} ${address.overseas_detail || ''}`
                         : `${address.province} ${address.city} ${address.district} ${address.detail}`}
                     </Text>
                   </View>
@@ -145,7 +148,7 @@ export default function AddressList() {
                           handleSelect(address)
                         }}>
                         <View className="i-mdi-check text-base mr-1" />
-                        <Text className="text-sm text-white font-bold">选用此地址</Text>
+                        <Text className="text-sm text-white font-bold">{ui('选用此地址', 'Use this address')}</Text>
                       </View>
                     </View>
                   ) : null}
@@ -160,7 +163,7 @@ export default function AddressList() {
                           handleEdit(address.id)
                         }}>
                         <View className="i-mdi-pencil text-base text-foreground mr-1" />
-                        <Text className="text-sm text-foreground font-bold">编辑</Text>
+                        <Text className="text-sm text-foreground font-bold">{ui('编辑', 'Edit')}</Text>
                       </View>
                       {!isDefault ? (
                         <View
@@ -170,7 +173,7 @@ export default function AddressList() {
                             handleSetDefault(address.id)
                           }}>
                           <View className="i-mdi-star-outline text-base text-primary mr-1" />
-                          <Text className="text-sm text-primary font-bold">设默认</Text>
+                          <Text className="text-sm text-primary font-bold">{ui('设默认', 'Set default')}</Text>
                         </View>
                       ) : null}
                       <View
@@ -180,7 +183,7 @@ export default function AddressList() {
                           handleDelete(address.id)
                         }}>
                         <View className="i-mdi-delete-outline text-base text-destructive mr-1" />
-                        <Text className="text-sm text-destructive font-bold">删除</Text>
+                        <Text className="text-sm text-destructive font-bold">{ui('删除', 'Delete')}</Text>
                       </View>
                     </View>
                   ) : null}
@@ -196,7 +199,7 @@ export default function AddressList() {
           <Button
             className="w-full bg-gradient-primary text-white rounded-full py-3 text-base font-bold break-keep"
             onClick={handleAdd}>
-            添加新地址
+            {ui('添加新地址', 'Add new address')}
           </Button>
         </View>
       )}

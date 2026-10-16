@@ -3,6 +3,7 @@ import Taro, {useRouter} from '@tarojs/taro'
 import {useCallback, useEffect, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {createAddress, getAddressDetail, updateAddress} from '@/db/api'
+import {useLanguage} from '@/hooks/useLanguage'
 import {parseAddressText} from '@/utils/addressParser'
 import {getCountryPhoneRule, getOverseasShippingPlans, OVERSEAS_COUNTRIES, validatePhone} from '@/utils/shippingPlans'
 
@@ -686,6 +687,8 @@ const REMOTE_AREAS = [
 ]
 
 export default function AddressEdit() {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
   const router = useRouter()
   const {user} = useAuth()
   const {id} = router.params
@@ -783,12 +786,19 @@ export default function AddressEdit() {
       const {data} = await Taro.getClipboardData()
       const text = (data || '').trim()
       if (!text) {
-        Taro.showToast({title: '剪贴板为空', icon: 'none'})
+        Taro.showToast({title: ui('剪贴板为空', 'Clipboard is empty'), icon: 'none'})
         return
       }
       const parsed = parseAddressText(text)
       if (!parsed) {
-        Taro.showModal({title: '识别失败', content: '未识别到有效地址信息，请检查文本后手动填写', showCancel: false})
+        Taro.showModal({
+          title: ui('识别失败', 'Could not parse address'),
+          content: ui(
+            '未识别到有效地址信息，请检查文本后手动填写',
+            'No valid address was found. Please check the text and enter it manually.'
+          ),
+          showCancel: false
+        })
         return
       }
       const next = {...formData}
@@ -823,45 +833,52 @@ export default function AddressEdit() {
       const districts = (REGION_DATA.districts as any)[next.city] || availableDistricts
       setAvailableDistricts(districts)
       setFormData(next)
-      Taro.showToast({title: `已识别${filled}项`, icon: 'success'})
+      Taro.showToast({title: ui(`已识别${filled}项`, `${filled} fields recognised`), icon: 'success'})
     } catch {
-      Taro.showToast({title: '读取剪贴板失败', icon: 'none'})
+      Taro.showToast({title: ui('读取剪贴板失败', 'Could not read clipboard'), icon: 'none'})
     }
   }
 
   const handleSubmit = async () => {
     if (!user) {
-      Taro.showToast({title: '请先登录', icon: 'none'})
+      Taro.showToast({title: ui('请先登录', 'Please sign in first'), icon: 'none'})
       return
     }
 
     if (!formData.receiver_name.trim()) {
-      Taro.showToast({title: '请输入收货人姓名', icon: 'none'})
+      Taro.showToast({title: ui('请输入收货人姓名', 'Enter the recipient name'), icon: 'none'})
       return
     }
 
     if (!formData.phone.trim()) {
-      Taro.showToast({title: '请输入联系电话', icon: 'none'})
+      Taro.showToast({title: ui('请输入联系电话', 'Enter a contact phone number'), icon: 'none'})
       return
     }
 
     if (!validatePhone(formData.phone, formData.is_overseas, formData.country)) {
       const rule = getCountryPhoneRule(formData.is_overseas ? formData.country : '')
-      Taro.showToast({title: formData.is_overseas ? rule.hint : '请输入正确的手机号', icon: 'none'})
+      Taro.showToast({
+        title: formData.is_overseas
+          ? language === 'en'
+            ? 'Please enter a valid phone number for the selected country'
+            : rule.hint
+          : ui('请输入正确的手机号', 'Enter a valid phone number'),
+        icon: 'none'
+      })
       return
     }
 
     if (formData.is_overseas) {
       if (!formData.country.trim()) {
-        Taro.showToast({title: '请选择目的国家', icon: 'none'})
+        Taro.showToast({title: ui('请选择目的国家', 'Select the destination country'), icon: 'none'})
         return
       }
       if (!formData.overseas_detail.trim()) {
-        Taro.showToast({title: '请输入海外详细地址', icon: 'none'})
+        Taro.showToast({title: ui('请输入海外详细地址', 'Enter the full overseas address'), icon: 'none'})
         return
       }
     } else if (!formData.detail.trim()) {
-      Taro.showToast({title: '请输入详细地址', icon: 'none'})
+      Taro.showToast({title: ui('请输入详细地址', 'Enter the full delivery address'), icon: 'none'})
       return
     }
 
@@ -881,12 +898,12 @@ export default function AddressEdit() {
         if (error) throw error
       }
 
-      Taro.showToast({title: '保存成功', icon: 'success'})
+      Taro.showToast({title: ui('保存成功', 'Address saved'), icon: 'success'})
       setTimeout(() => {
         Taro.navigateBack()
       }, 1500)
     } catch (error: any) {
-      Taro.showToast({title: error.message || '保存失败', icon: 'none'})
+      Taro.showToast({title: error.message || ui('保存失败', 'Could not save the address'), icon: 'none'})
     } finally {
       setLoading(false)
     }
@@ -898,33 +915,37 @@ export default function AddressEdit() {
         <View className="p-4">
           <View className="bg-card rounded-xl p-4 mb-4 shadow-card">
             <View className="flex flex-row items-center justify-between mb-4">
-              <Text className="text-base font-bold text-foreground">收货人信息</Text>
+              <Text className="text-base font-bold text-foreground">{ui('收货人信息', 'Recipient information')}</Text>
               <View
                 className="flex flex-row items-center bg-primary/10 rounded-full px-3 py-1.5 active:scale-95 transition-all"
                 onClick={handlePaste}>
                 <View className="i-mdi-content-paste text-base text-primary mr-1" />
-                <Text className="text-sm text-primary font-bold">粘贴识别</Text>
+                <Text className="text-sm text-primary font-bold">{ui('粘贴识别', 'Paste & parse')}</Text>
               </View>
             </View>
             <View className="space-y-4">
               <View>
-                <Text className="text-base text-muted-foreground mb-2">收货人姓名 *</Text>
+                <Text className="text-base text-muted-foreground mb-2">{ui('收货人姓名 *', 'Recipient name *')}</Text>
                 <View className="bg-input rounded-lg border border-border px-3 py-2">
                   <Input
                     className="w-full text-foreground"
-                    placeholder="请输入收货人姓名"
+                    placeholder={ui('请输入收货人姓名', 'Enter recipient name')}
                     value={formData.receiver_name}
                     onInput={(e) => updateField('receiver_name', e.detail.value)}
                   />
                 </View>
               </View>
               <View>
-                <Text className="text-base text-muted-foreground mb-2">联系电话 *</Text>
+                <Text className="text-base text-muted-foreground mb-2">{ui('联系电话 *', 'Phone number *')}</Text>
                 <View className="bg-input rounded-lg border border-border px-3 py-2">
                   <Input
                     className="w-full text-foreground"
                     placeholder={
-                      formData.is_overseas ? getCountryPhoneRule(formData.country).placeholder : '请输入11位手机号'
+                      formData.is_overseas
+                        ? language === 'en'
+                          ? 'Enter phone number'
+                          : getCountryPhoneRule(formData.country).placeholder
+                        : ui('请输入11位手机号', 'Enter 11-digit phone number')
                     }
                     type="number"
                     maxlength={formData.is_overseas ? getCountryPhoneRule(formData.country).max : 11}
@@ -943,12 +964,12 @@ export default function AddressEdit() {
 
           <View className="bg-card rounded-xl p-4 mb-4 shadow-card">
             <View className="flex flex-row items-center justify-between mb-2">
-              <Text className="text-base font-bold text-foreground">收货地址</Text>
+              <Text className="text-base font-bold text-foreground">{ui('收货地址', 'Delivery address')}</Text>
               <View
                 className="flex flex-row items-center active:scale-95 transition-all"
                 onClick={() => updateField('is_overseas', !formData.is_overseas)}>
                 <Text className="text-sm text-muted-foreground mr-2">
-                  {formData.is_overseas ? '海外地址' : '国内地址'}
+                  {formData.is_overseas ? ui('海外地址', 'Overseas address') : ui('国内地址', 'Mainland China address')}
                 </Text>
                 <View
                   className={`w-12 h-6 rounded-full transition-colors ${formData.is_overseas ? 'bg-primary' : 'bg-muted'}`}>
@@ -962,11 +983,14 @@ export default function AddressEdit() {
             {!formData.is_overseas ? (
               <View>
                 <Text className="text-base text-muted-foreground mt-2 mb-4">
-                  支持中国大陆所有省市（不含港澳台及海外地区）
+                  {ui(
+                    '支持中国大陆所有省市（不含港澳台及海外地区）',
+                    'Mainland China provinces and cities are supported (excluding Hong Kong, Macao, Taiwan, and overseas regions).'
+                  )}
                 </Text>
                 <View className="space-y-4">
                   <View>
-                    <Text className="text-base text-muted-foreground mb-2">省份</Text>
+                    <Text className="text-base text-muted-foreground mb-2">{ui('省份', 'Province')}</Text>
                     <Picker
                       mode="selector"
                       range={REGION_DATA.provinces}
@@ -978,7 +1002,7 @@ export default function AddressEdit() {
                     </Picker>
                   </View>
                   <View>
-                    <Text className="text-base text-muted-foreground mb-2">城市</Text>
+                    <Text className="text-base text-muted-foreground mb-2">{ui('城市', 'City')}</Text>
                     <Picker
                       mode="selector"
                       range={availableCities}
@@ -990,11 +1014,11 @@ export default function AddressEdit() {
                     </Picker>
                   </View>
                   <View>
-                    <Text className="text-base text-muted-foreground mb-2">详细地址 *</Text>
+                    <Text className="text-base text-muted-foreground mb-2">{ui('详细地址 *', 'Street address *')}</Text>
                     <View className="bg-input rounded-lg border border-border px-3 py-2">
                       <Input
                         className="w-full text-foreground"
-                        placeholder="街道、楼牌号等详细信息"
+                        placeholder={ui('街道、楼牌号等详细信息', 'Street, building, unit, and other details')}
                         value={formData.detail}
                         onInput={(e) => updateField('detail', e.detail.value)}
                       />
@@ -1016,27 +1040,36 @@ export default function AddressEdit() {
             ) : (
               <View>
                 <Text className="text-base text-muted-foreground mt-2 mb-4">
-                  支持海外收货地址，选择目的国家后将预估国际物流方案
+                  {ui(
+                    '支持海外收货地址，选择目的国家后将预估国际物流方案',
+                    'Overseas delivery is supported. Select a country to estimate shipping options.'
+                  )}
                 </Text>
                 <View className="space-y-4">
                   <View>
-                    <Text className="text-base text-muted-foreground mb-2">目的国家 *</Text>
+                    <Text className="text-base text-muted-foreground mb-2">
+                      {ui('目的国家 *', 'Destination country *')}
+                    </Text>
                     <Picker
                       mode="selector"
                       range={OVERSEAS_COUNTRIES}
                       value={OVERSEAS_COUNTRIES.indexOf(formData.country)}
                       onChange={(e: any) => updateField('country', OVERSEAS_COUNTRIES[e.detail.value])}>
                       <View className="bg-input rounded-lg border border-border px-3 py-3">
-                        <Text className="text-foreground">{formData.country || '请选择目的国家'}</Text>
+                        <Text className="text-foreground">
+                          {formData.country || ui('请选择目的国家', 'Select a destination country')}
+                        </Text>
                       </View>
                     </Picker>
                   </View>
                   <View>
-                    <Text className="text-base text-muted-foreground mb-2">海外详细地址 *</Text>
+                    <Text className="text-base text-muted-foreground mb-2">
+                      {ui('海外详细地址 *', 'Full overseas address *')}
+                    </Text>
                     <View className="bg-input rounded-lg border border-border px-3 py-2">
                       <Input
                         className="w-full text-foreground"
-                        placeholder="State / City / Street / ZIP 等英文或中文地址"
+                        placeholder={ui('State / City / Street / ZIP 等英文或中文地址', 'State / City / Street / ZIP')}
                         value={formData.overseas_detail}
                         onInput={(e) => updateField('overseas_detail', e.detail.value)}
                       />
@@ -1048,7 +1081,9 @@ export default function AddressEdit() {
                   <View className="mt-4 bg-primary/5 rounded-xl p-4 border border-primary/15">
                     <View className="flex flex-row items-center mb-3">
                       <View className="i-mdi-truck-fast text-xl text-primary mr-2" />
-                      <Text className="text-base font-bold text-primary">国际物流方案预估</Text>
+                      <Text className="text-base font-bold text-primary">
+                        {ui('国际物流方案预估', 'Estimated international shipping')}
+                      </Text>
                     </View>
                     {getOverseasShippingPlans(formData.country).map((plan, pi) => (
                       <View key={pi} className="bg-card rounded-xl p-3 mb-2 border border-border border-opacity-10">
@@ -1058,12 +1093,17 @@ export default function AddressEdit() {
                         </View>
                         <View className="flex flex-row items-center justify-between">
                           <Text className="text-xs text-muted-foreground flex-1">{plan.note}</Text>
-                          <Text className="text-xs text-muted-foreground ml-2">约 {plan.daysRange}</Text>
+                          <Text className="text-xs text-muted-foreground ml-2">
+                            {ui(`约 ${plan.daysRange}`, `Approx. ${plan.daysRange}`)}
+                          </Text>
                         </View>
                       </View>
                     ))}
                     <Text className="text-xs text-muted-foreground mt-1 block">
-                      以上费用与时效为公开常识性参考区间，实际以承运商确认为准
+                      {ui(
+                        '以上费用与时效为公开常识性参考区间，实际以承运商确认为准',
+                        'Costs and delivery times are reference ranges; confirm the final details with the carrier.'
+                      )}
                     </Text>
                   </View>
                 ) : null}
@@ -1075,7 +1115,7 @@ export default function AddressEdit() {
             <View
               className="flex items-center justify-between"
               onClick={() => updateField('is_default', !formData.is_default)}>
-              <Text className="text-base text-foreground">设为默认地址</Text>
+              <Text className="text-base text-foreground">{ui('设为默认地址', 'Set as default address')}</Text>
               <View
                 className={`w-12 h-6 rounded-full transition-colors ${formData.is_default ? 'bg-primary' : 'bg-muted'}`}>
                 <View
@@ -1092,7 +1132,7 @@ export default function AddressEdit() {
           className="w-full bg-gradient-primary text-white rounded-full py-3 text-base font-bold break-keep"
           onClick={handleSubmit}
           loading={loading}>
-          保存地址
+          {ui('保存地址', 'Save address')}
         </Button>
       </View>
     </View>

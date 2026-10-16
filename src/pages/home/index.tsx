@@ -308,7 +308,7 @@ export default function Home() {
                   />
                   <View className="p-4">
                     <Text className="text-base font-bold text-foreground mb-1.5 line-clamp-1">
-                      {localizedContent(product.name, product.name_en)}
+                      {localizedContent(product.name, product.name_en || undefined)}
                     </Text>
                     <View className="flex items-center justify-between">
                       <Text className="text-xl font-black text-primary">
@@ -432,7 +432,7 @@ export default function Home() {
                   </View>
                 </View>
                 <Text className="text-base text-muted-foreground mb-4 line-clamp-2 leading-relaxed relative z-10 opacity-80">
-                  {localizedContent(ticket.description, (ticket as any).description_en)}
+                  {localizedContent(ticket.description || '', (ticket as any).description_en)}
                 </Text>
                 <View className="flex items-center justify-between relative z-10">
                   <View className="flex items-baseline">

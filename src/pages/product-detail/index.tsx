@@ -4,10 +4,14 @@ import {useCallback, useEffect, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {checkUserPurchased, getProductReviews, getReviewSummary, getSKUDetail, toggleReviewLike} from '@/db/api'
 import type {ProductReview, SKU} from '@/db/types'
+import {useLanguage} from '@/hooks/useLanguage'
+import {t} from '@/utils/i18n'
 import {DEFAULT_AVATAR, DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 import {formatDateTime} from '@/utils/time'
 
 export default function ProductDetail() {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
   const router = useRouter()
   const {skuCode, sku} = router.params
   const {user} = useAuth()
@@ -26,6 +30,20 @@ export default function ProductDetail() {
   const colors = ['朱红', '玄黑', '琥珀', '月白']
   const styles = ['款式一', '款式二']
   const postcardTypes = ['按一套购买', '按张购买']
+  const optionLabel = (value: string) => {
+    if (language !== 'en') return value
+    const labels: Record<string, string> = {
+      朱红: 'Cinnabar',
+      玄黑: 'Ink Black',
+      琥珀: 'Amber',
+      月白: 'Moon White',
+      款式一: 'Style 1',
+      款式二: 'Style 2',
+      按一套购买: 'Buy as a set',
+      按张购买: 'Buy by piece'
+    }
+    return labels[value] || value
+  }
 
   const loadProduct = useCallback(async () => {
     const code = skuCode || sku
@@ -104,7 +122,7 @@ export default function ProductDetail() {
     if (!product) return
 
     if (product.name.includes('印章') && !customText.trim()) {
-      Taro.showToast({title: '请输入定制文字', icon: 'none'})
+      Taro.showToast({title: ui('请输入定制文字', 'Please enter the custom text'), icon: 'none'})
       return
     }
 
@@ -134,7 +152,7 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <View className="min-h-screen bg-gradient-subtle flex items-center justify-center">
-        <Text className="text-muted-foreground">加载中...</Text>
+        <Text className="text-muted-foreground">{ui('加载中...', 'Loading...')}</Text>
       </View>
     )
   }
@@ -152,10 +170,12 @@ export default function ProductDetail() {
 
         <View className="bg-card rounded-t-3xl p-6 mt--4 shadow-card">
           <View className="flex justify-between items-start mb-2">
-            <Text className="text-2xl font-bold text-accent">{product.name}</Text>
+            <Text className="text-2xl font-bold text-accent">
+              {language === 'en' ? product.name_en || t('name_translation_unavailable') : product.name}
+            </Text>
             {product.category === 'premium' && (
               <View className="bg-primary px-3 py-1 rounded">
-                <Text className="text-base text-white">高端定制</Text>
+                <Text className="text-base text-white">{ui('高端定制', 'Premium Custom')}</Text>
               </View>
             )}
           </View>
@@ -164,7 +184,7 @@ export default function ProductDetail() {
           {/* 明信片购买方式 */}
           {isPostcard && (
             <View className="border-t border-border pt-4 mb-6">
-              <Text className="text-base font-bold text-accent mb-3">购买方式</Text>
+              <Text className="text-base font-bold text-accent mb-3">{ui('购买方式', 'Purchase option')}</Text>
               <View className="flex flex-wrap gap-3">
                 {postcardTypes.map((type) => (
                   <View
@@ -179,7 +199,7 @@ export default function ProductDetail() {
                       className={`text-base font-medium ${
                         selectedType === type ? 'text-selected-text' : 'text-muted-foreground'
                       }`}>
-                      {type}
+                      {optionLabel(type)}
                     </Text>
                   </View>
                 ))}
@@ -190,7 +210,9 @@ export default function ProductDetail() {
           {/* 款式选择（明信片单张、冰箱贴、徽章、DIY材料包） */}
           {((isPostcard && selectedType === '按张购买') || isMagnet || isBadge || isDIY) && (
             <View className="border-t border-border pt-4 mb-6">
-              <Text className="text-base font-bold text-accent mb-3">款式选择 (图案/根书字)</Text>
+              <Text className="text-base font-bold text-accent mb-3">
+                {ui('款式选择（图案/根书字）', 'Style (pattern / Root Calligraphy)')}
+              </Text>
               <View className="flex flex-wrap gap-3">
                 {styles.map((style) => (
                   <View
@@ -205,7 +227,7 @@ export default function ProductDetail() {
                       className={`text-base font-medium ${
                         selectedStyle === style ? 'text-selected-text' : 'text-muted-foreground'
                       }`}>
-                      {style}
+                      {optionLabel(style)}
                     </Text>
                   </View>
                 ))}
@@ -216,11 +238,13 @@ export default function ProductDetail() {
           {/* 颜色/木材颜色选择（徽章及其他常规文创） */}
           {(isBadge || (!isPostcard && !isMagnet && !isDIY && !isStamp)) && (
             <View className="border-t border-border pt-4 mb-6">
-              <Text className="text-base font-bold text-accent mb-3">{isBadge ? '木材颜色' : '规格选择'}</Text>
+              <Text className="text-base font-bold text-accent mb-3">
+                {isBadge ? ui('木材颜色', 'Wood colour') : ui('规格选择', 'Options')}
+              </Text>
               <View className="flex flex-wrap gap-3">
                 {colors.map((color) => (
                   <View
-                    key={color}
+                    key={optionLabel(color)}
                     className={`px-6 py-2 rounded-full border-2 transition-all ${
                       selectedColor === color
                         ? 'border-selected-bg bg-selected-bg'
@@ -231,7 +255,7 @@ export default function ProductDetail() {
                       className={`text-base font-medium ${
                         selectedColor === color ? 'text-selected-text' : 'text-muted-foreground'
                       }`}>
-                      {color}
+                      {optionLabel(color)}
                     </Text>
                   </View>
                 ))}
@@ -241,11 +265,11 @@ export default function ProductDetail() {
 
           {isStamp && (
             <View className="border-t border-border pt-4 mb-6">
-              <Text className="text-base font-bold text-accent mb-3">规格选择</Text>
+              <Text className="text-base font-bold text-accent mb-3">{ui('规格选择', 'Options')}</Text>
               <View className="flex flex-wrap gap-3">
                 {colors.map((color) => (
                   <View
-                    key={color}
+                    key={optionLabel(color)}
                     className={`px-6 py-2 rounded-full border-2 transition-all ${
                       selectedColor === color
                         ? 'border-selected-bg bg-selected-bg'
@@ -256,7 +280,7 @@ export default function ProductDetail() {
                       className={`text-base font-medium ${
                         selectedColor === color ? 'text-selected-text' : 'text-muted-foreground'
                       }`}>
-                      {color}
+                      {optionLabel(color)}
                     </Text>
                   </View>
                 ))}
@@ -266,40 +290,55 @@ export default function ProductDetail() {
 
           {isStamp && (
             <View className="border-t border-border pt-4 mb-6">
-              <Text className="text-base font-bold text-accent mb-3">定制姓名 (1-4字)</Text>
+              <Text className="text-base font-bold text-accent mb-3">
+                {ui('定制姓名（1-4字）', 'Custom name (1–4 characters)')}
+              </Text>
               <View className="bg-muted bg-opacity-50 p-3 rounded-xl border border-border">
                 <Input
                   className="text-foreground text-base"
-                  placeholder="请输入要刻在印章上的姓名"
+                  placeholder={ui('请输入要刻在印章上的姓名', 'Enter the name to engrave')}
                   maxlength={4}
                   value={customText}
                   onInput={(e) => setCustomText(e.detail.value)}
                 />
               </View>
-              <Text className="text-base text-muted-foreground mt-2">提示：印章为手工镌刻，建议字数为1-4字。</Text>
+              <Text className="text-base text-muted-foreground mt-2">
+                {ui('提示：印章为手工镌刻，建议字数为1-4字。', 'Hand-engraved stamp. We recommend 1–4 characters.')}
+              </Text>
             </View>
           )}
 
           <View className="border-t border-border pt-4 mb-6">
-            <Text className="text-base font-bold text-accent mb-3">商品详情</Text>
+            <Text className="text-base font-bold text-accent mb-3">{ui('商品详情', 'Product details')}</Text>
             <View className="space-y-3">
               <View className="bg-muted bg-opacity-30 p-4 rounded-xl">
                 <Text className="text-base text-muted-foreground leading-relaxed">
-                  {product.description || '根书文创精品，融合传统工艺与现代审美。'}
+                  {language === 'en'
+                    ? product.description_en || t('translation_unavailable_note')
+                    : product.description || '根书文创精品，融合传统工艺与现代审美。'}
                 </Text>
               </View>
               <View className="flex flex-col space-y-2">
                 <View className="flex items-center">
                   <View className="i-mdi-check-decagram text-primary mr-2" />
-                  <Text className="text-base text-foreground">非物质文化遗产授权</Text>
+                  <Text className="text-base text-foreground">
+                    {ui('非物质文化遗产授权', 'Intangible cultural heritage licensed')}
+                  </Text>
                 </View>
                 <View className="flex items-center">
                   <View className="i-mdi-check-decagram text-primary mr-2" />
-                  <Text className="text-base text-foreground">全国顺丰包邮（偏远地区除外）</Text>
+                  <Text className="text-base text-foreground">
+                    {ui(
+                      '全国顺丰包邮（偏远地区除外）',
+                      'Free SF Express shipping in mainland China (remote areas excluded)'
+                    )}
+                  </Text>
                 </View>
                 <View className="flex items-center">
                   <View className="i-mdi-check-decagram text-primary mr-2" />
-                  <Text className="text-base text-foreground">精美礼盒包装，附赠收藏证书</Text>
+                  <Text className="text-base text-foreground">
+                    {ui('精美礼盒包装，附赠收藏证书', 'Gift-box packaging with a collector certificate')}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -309,7 +348,7 @@ export default function ProductDetail() {
           <View className="border-t border-border pt-6 mb-6">
             <View className="flex flex-row items-center justify-between mb-4">
               <View className="flex flex-row items-center gap-2">
-                <Text className="text-xl font-bold text-accent">评论反馈</Text>
+                <Text className="text-xl font-bold text-accent">{ui('评论反馈', 'Reviews')}</Text>
                 {reviewSummary.count > 0 && (
                   <View className="flex flex-row items-center bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
                     <View className="i-mdi-star text-amber-500 text-sm mr-1" />
@@ -323,22 +362,22 @@ export default function ProductDetail() {
                   className="flex flex-row items-center bg-primary/10 px-3 py-1.5 rounded-full active:opacity-60"
                   onClick={goToCreateReview}>
                   <View className="i-mdi-square-edit-outline text-lg text-primary mr-1" />
-                  <Text className="text-sm font-bold text-primary">评价</Text>
+                  <Text className="text-sm font-bold text-primary">{ui('评价', 'Review')}</Text>
                 </View>
               )}
             </View>
 
             {loadingReviews ? (
               <View className="py-8 text-center">
-                <Text className="text-sm text-slate-400">加载评价中...</Text>
+                <Text className="text-sm text-slate-400">{ui('加载评价中...', 'Loading reviews...')}</Text>
               </View>
             ) : reviews.length === 0 ? (
               <View className="bg-muted bg-opacity-30 rounded-2xl p-8 flex flex-col items-center justify-center border border-dashed border-border">
                 <View className="i-mdi-comment-outline text-4xl text-slate-300 mb-2" />
-                <Text className="text-sm text-slate-400 font-medium">暂无评价</Text>
+                <Text className="text-sm text-slate-400 font-medium">{ui('暂无评价', 'No reviews yet')}</Text>
                 {hasPurchased && (
                   <Text className="text-xs text-primary mt-2 underline" onClick={goToCreateReview}>
-                    成为第一个评价的人吧
+                    {ui('成为第一个评价的人吧', 'Be the first to leave a review')}
                   </Text>
                 )}
               </View>
@@ -354,7 +393,9 @@ export default function ProductDetail() {
                         />
                         <View>
                           <Text className="text-sm font-black text-foreground block">
-                            {review.is_anonymous ? '匿名用户' : review.author?.username || '用户'}
+                            {review.is_anonymous
+                              ? ui('匿名用户', 'Anonymous')
+                              : review.author?.username || ui('用户', 'User')}
                           </Text>
                           <View className="flex flex-row items-center">
                             {[1, 2, 3, 4, 5].map((s) => (

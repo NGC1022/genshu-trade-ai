@@ -4,6 +4,7 @@ import {useCallback, useEffect, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {createTicketOrder, getTicketTypeDetail} from '@/db/api'
 import type {TicketType} from '@/db/types'
+import {useLanguage} from '@/hooks/useLanguage'
 import {getOpenId, requestWechatPay} from '@/utils/payment'
 
 type IdType = 'id_card' | 'hk_mo_pass' | 'tw_pass' | 'passport'
@@ -22,6 +23,8 @@ const ID_TYPES = [
 ]
 
 export default function TicketConfirm() {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
   const router = useRouter()
   const {user, profile, refreshProfile} = useAuth()
   const {id, quantity, ticketType, unitPrice} = router.params
@@ -124,19 +127,26 @@ export default function TicketConfirm() {
   }
 
   const getIdTypeName = (idType: IdType): string => {
-    return ID_TYPES.find((t) => t.value === idType)?.label || ''
+    const names: Record<IdType, [string, string]> = {
+      id_card: ['身份证', 'Mainland ID card'],
+      hk_mo_pass: ['港澳通行证', 'Hong Kong/Macao permit'],
+      tw_pass: ['台胞证', 'Taiwan travel permit'],
+      passport: ['外国护照', 'Passport']
+    }
+    const pair = names[idType]
+    return pair ? ui(pair[0], pair[1]) : ''
   }
 
   const getTicketTypeName = (type: string): string => {
     const typeMap: Record<string, string> = {
-      adult: '成人票',
-      child_free: '儿童免票',
-      teen: '青少年票',
-      senior: '敬老票',
-      student: '大学生票',
-      disabled: '身心障碍票',
-      hmt: '港澳台票',
-      foreigner: '外籍人士票'
+      adult: ui('成人票', 'Adult'),
+      child_free: ui('儿童免票', 'Child (free)'),
+      teen: ui('青少年票', 'Youth'),
+      senior: ui('敬老票', 'Senior'),
+      student: ui('大学生票', 'University student'),
+      disabled: ui('身心障碍票', 'Accessibility ticket'),
+      hmt: ui('港澳台票', 'Hong Kong, Macao & Taiwan'),
+      foreigner: ui('外籍人士票', 'International visitor')
     }
     return typeMap[type] || '成人票'
   }
@@ -243,7 +253,7 @@ export default function TicketConfirm() {
   if (!ticket) {
     return (
       <View className="min-h-screen bg-gradient-subtle flex items-center justify-center">
-        <Text className="text-muted-foreground">加载中...</Text>
+        <Text className="text-muted-foreground">{ui('加载中...', 'Loading...')}</Text>
       </View>
     )
   }
@@ -256,23 +266,23 @@ export default function TicketConfirm() {
       <ScrollView className="flex-1 pb-24" scrollY>
         <View className="p-4">
           <View className="bg-card rounded-xl p-4 mb-4 shadow-card">
-            <Text className="text-base font-bold text-foreground mb-3">门票信息</Text>
+            <Text className="text-base font-bold text-foreground mb-3">{ui('门票信息', 'Ticket information')}</Text>
             <View className="flex items-center justify-between py-2">
               <Text className="text-base text-foreground">{ticket.name}</Text>
               <Text className="text-base font-bold text-primary">¥{unitPrice}</Text>
             </View>
             <View className="flex items-center justify-between py-2">
-              <Text className="text-base text-muted-foreground">票种类型</Text>
+              <Text className="text-base text-muted-foreground">{ui('票种类型', 'Ticket type')}</Text>
               <Text className="text-base text-foreground">{ticketTypeName}</Text>
             </View>
             <View className="flex items-center justify-between py-2">
-              <Text className="text-base text-muted-foreground">购买数量</Text>
+              <Text className="text-base text-muted-foreground">{ui('购买数量', 'Quantity')}</Text>
               <Text className="text-base text-foreground">{quantity}张</Text>
             </View>
           </View>
 
           <View className="bg-card rounded-xl p-4 mb-4 shadow-card">
-            <Text className="text-base font-bold text-foreground mb-3">参观信息</Text>
+            <Text className="text-base font-bold text-foreground mb-3">{ui('参观信息', 'Visit information')}</Text>
             <View className="mb-4">
               <Text className="text-base text-muted-foreground mb-2 block">参观日期 *（仅限近7天，周一闭园）</Text>
               <Picker
@@ -288,7 +298,7 @@ export default function TicketConfirm() {
               </Picker>
             </View>
             <View>
-              <Text className="text-base text-muted-foreground mb-2 block">联系电话 *</Text>
+              <Text className="text-base text-muted-foreground mb-2 block">{ui('联系电话 *', 'Contact phone *')}</Text>
               <View className="bg-input rounded-lg border border-border px-3 py-2">
                 <Input
                   className="w-full text-foreground"
@@ -307,7 +317,7 @@ export default function TicketConfirm() {
               <Text className="text-base font-bold text-foreground mb-3">第{index + 1}位参访人信息</Text>
               <View className="space-y-4">
                 <View>
-                  <Text className="text-base text-muted-foreground mb-2">姓名 *</Text>
+                  <Text className="text-base text-muted-foreground mb-2">{ui('姓名 *', 'Name *')}</Text>
                   <View className="bg-input rounded-lg border border-border px-3 py-2">
                     <Input
                       className="w-full text-foreground"
@@ -319,10 +329,10 @@ export default function TicketConfirm() {
                 </View>
 
                 <View>
-                  <Text className="text-base text-muted-foreground mb-2">证件类型 *</Text>
+                  <Text className="text-base text-muted-foreground mb-2">{ui('证件类型 *', 'ID type *')}</Text>
                   <Picker
                     mode="selector"
-                    range={ID_TYPES.map((t) => t.label)}
+                    range={ID_TYPES.map((type) => getIdTypeName(type.value as IdType))}
                     value={ID_TYPES.findIndex((t) => t.value === visitor.idType)}
                     onChange={(e) => handleIdTypeChange(index, e)}>
                     <View className="bg-input rounded-lg border border-border px-3 py-3">
@@ -332,7 +342,7 @@ export default function TicketConfirm() {
                 </View>
 
                 <View>
-                  <Text className="text-base text-muted-foreground mb-2">证件号码 *</Text>
+                  <Text className="text-base text-muted-foreground mb-2">{ui('证件号码 *', 'ID number *')}</Text>
                   <View className="bg-input rounded-lg border border-border px-3 py-2">
                     <Input
                       className="w-full text-foreground"
@@ -350,10 +360,12 @@ export default function TicketConfirm() {
                     />
                   </View>
                   <Text className="text-base text-muted-foreground mt-1">
-                    {visitor.idType === 'id_card' && '请输入18位身份证号码'}
-                    {visitor.idType === 'hk_mo_pass' && '港澳通行证号码，如：H12345678'}
-                    {visitor.idType === 'tw_pass' && '台胞证号码，8-10位数字'}
-                    {visitor.idType === 'passport' && '护照号码，5-20位字母数字组合'}
+                    {visitor.idType === 'id_card' && ui('请输入18位身份证号码', 'Enter the 18-digit ID number')}
+                    {visitor.idType === 'hk_mo_pass' &&
+                      ui('港澳通行证号码，如：H12345678', 'Hong Kong/Macao permit, e.g. H12345678')}
+                    {visitor.idType === 'tw_pass' && ui('台胞证号码，8-10位数字', 'Taiwan permit, 8–10 digits')}
+                    {visitor.idType === 'passport' &&
+                      ui('护照号码，5-20位字母数字组合', 'Passport, 5–20 letters and numbers')}
                   </Text>
                 </View>
               </View>
@@ -361,14 +373,14 @@ export default function TicketConfirm() {
           ))}
 
           <View className="bg-card rounded-xl p-4 shadow-card">
-            <Text className="text-base font-bold text-foreground mb-3">费用明细</Text>
+            <Text className="text-base font-bold text-foreground mb-3">{ui('费用明细', 'Price breakdown')}</Text>
             <View className="flex items-center justify-between py-2">
-              <Text className="text-base text-muted-foreground">门票费用</Text>
+              <Text className="text-base text-muted-foreground">{ui('门票费用', 'Ticket price')}</Text>
               <Text className="text-base text-foreground">¥{totalAmount}</Text>
             </View>
             <View className="border-t border-border pt-2 mt-2">
               <View className="flex items-center justify-between">
-                <Text className="text-base font-bold text-foreground">实付金额</Text>
+                <Text className="text-base font-bold text-foreground">{ui('实付金额', 'Amount payable')}</Text>
                 <Text className="text-xl font-bold text-primary">{totalAmount === 0 ? '免费' : `¥${totalAmount}`}</Text>
               </View>
             </View>
@@ -378,7 +390,7 @@ export default function TicketConfirm() {
 
       <View className="fixed bottom-0 left-0 right-0 bg-card p-4 border-t border-border">
         <View className="flex items-center justify-between mb-3">
-          <Text className="text-base text-muted-foreground">合计：</Text>
+          <Text className="text-base text-muted-foreground">{ui('合计：', 'Total:')}</Text>
           <Text className="text-xl font-bold text-primary">{totalAmount === 0 ? '免费' : `¥${totalAmount}`}</Text>
         </View>
         <Button
