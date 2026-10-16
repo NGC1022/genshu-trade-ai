@@ -94,14 +94,17 @@ export default function AiTradeSupport() {
         const result = await generateSupportReply(nextMessages)
         setMessages([...nextMessages, {role: 'assistant', content: result.reply, suggestions: result.suggestions}])
       } catch (e) {
-        const msg = e instanceof Error ? e.message : 'AI客服暂时不可用，请稍后再试'
-        setMessages([...nextMessages, {role: 'assistant', content: `抱歉，${msg}`}])
+        const msg =
+          e instanceof Error
+            ? e.message
+            : ui('AI客服暂时不可用，请稍后再试', 'AI support is temporarily unavailable. Please try again.')
+        setMessages([...nextMessages, {role: 'assistant', content: ui(`抱歉，${msg}`, `Sorry, ${msg}`)}])
       } finally {
         setSending(false)
         scrollBottom()
       }
     },
-    [scrollBottom]
+    [scrollBottom, ui]
   )
 
   // 发送文创商品图片：选图 → 上传Storage → MiniMax-M3多模态识别 → 展示结果

@@ -5,8 +5,10 @@ import {useAuth} from '@/contexts/AuthContext'
 import {checkFollowing, followUser, getLikedNotes, getNotes, getUserProfile, unfollowUser} from '@/db/api'
 import type {Note, Profile} from '@/db/types'
 import {DEFAULT_AVATAR} from '@/utils/images'
-
+import {useLanguage} from '@/hooks/useLanguage'
 export default function UserProfile() {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
   const router = useRouter()
   const {userId} = router.params
   const {user} = useAuth()
@@ -270,12 +272,12 @@ export default function UserProfile() {
                 <View
                   className={`px-3 py-1 rounded-full text-sm font-medium ${sortBy === 'latest' ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400'}`}
                   onClick={() => handleSortChange('latest')}>
-                  <Text>最新</Text>
+                  <Text>{ui('最新', 'Latest')}</Text>
                 </View>
                 <View
                   className={`px-3 py-1 rounded-full text-sm font-medium ${sortBy === 'hottest' ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400'}`}
                   onClick={() => handleSortChange('hottest')}>
-                  <Text>最热</Text>
+                  <Text>{ui('最热', 'Hottest')}</Text>
                 </View>
               </View>
             </View>

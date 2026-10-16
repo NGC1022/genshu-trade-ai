@@ -4,6 +4,7 @@ import {useCallback, useEffect, useRef, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {getNotes, searchUsers} from '@/db/api'
 import type {Note, Profile} from '@/db/types'
+import {useLanguage} from '@/hooks/useLanguage'
 import {DEFAULT_AVATAR} from '@/utils/images'
 
 const SEARCH_HISTORY_KEY = 'search_history'
@@ -13,6 +14,8 @@ export default function Notes() {
   const router = useRouter()
   const {topic: topicParam} = router.params
   const {user} = useAuth()
+  const language = useLanguage()
+  const ui = useCallback((zh: string, en: string) => (language === 'en' ? en : zh), [language])
   const [notes, setNotes] = useState<Note[]>([])
   const [users, setUsers] = useState<Profile[]>([])
   const [keyword, setKeyword] = useState('')
@@ -66,13 +69,13 @@ export default function Notes() {
         setCurrentTopic(topic)
       } catch {
         if (requestVersion === requestVersionRef.current) {
-          Taro.showToast({title: '内容加载失败，请重试', icon: 'none'})
+          Taro.showToast({title: ui('内容加载失败，请重试', 'Failed to load content. Please try again.'), icon: 'none'})
         }
       } finally {
         if (requestVersion === requestVersionRef.current) setLoading(false)
       }
     },
-    [searchMode, user?.id]
+    [searchMode, user?.id, ui]
   )
 
   useDidShow(() => {
@@ -109,12 +112,15 @@ export default function Notes() {
       })
       setHasMore(data.length === NOTE_PAGE_SIZE)
     } catch {
-      Taro.showToast({title: '加载更多失败，请稍后重试', icon: 'none'})
+      Taro.showToast({
+        title: ui('加载更多失败，请稍后重试', 'Failed to load more. Please try again later.'),
+        icon: 'none'
+      })
     } finally {
       loadingMoreRef.current = false
       setLoadingMore(false)
     }
-  }, [appliedKeyword, currentTopic, hasMore, loading, notes.length, searchMode, sortBy, user?.id])
+  }, [appliedKeyword, currentTopic, hasMore, loading, notes.length, searchMode, sortBy, user?.id, ui])
 
   const handleClearFilter = () => {
     setCurrentTopic('')
@@ -140,8 +146,8 @@ export default function Notes() {
 
   const clearAllHistory = () => {
     Taro.showModal({
-      title: '提示',
-      content: '确定清空所有搜索记录吗？',
+      title: ui('提示', 'Notice'),
+      content: ui('确定清空所有搜索记录吗？', 'Are you sure you want to clear all search history?'),
       success: (res) => {
         if (res.confirm) {
           setSearchHistory([])
@@ -223,7 +229,7 @@ export default function Notes() {
             }`}
             onClick={() => handleSwitchMode('notes')}>
             <Text className={`text-base font-bold ${searchMode === 'notes' ? 'text-primary' : 'text-slate-500'}`}>
-              笔记
+              {ui('笔记', 'Notes')}
             </Text>
           </View>
           <View
@@ -232,7 +238,7 @@ export default function Notes() {
             }`}
             onClick={() => handleSwitchMode('users')}>
             <Text className={`text-base font-bold ${searchMode === 'users' ? 'text-primary' : 'text-slate-500'}`}>
-              用户
+              {ui('用户', 'Users')}
             </Text>
           </View>
         </View>
@@ -241,7 +247,11 @@ export default function Notes() {
           <View className="i-mdi-magnify text-xl text-slate-400 mr-2" />
           <Input
             className="flex-1 text-base"
-            placeholder={searchMode === 'notes' ? '搜索你感兴趣的笔记' : '搜索用户名'}
+            placeholder={
+              searchMode === 'notes'
+                ? ui('搜索你感兴趣的笔记', 'Search notes you are interested in')
+                : ui('搜索用户名', 'Search users')
+            }
             value={keyword}
             onInput={handleSearch}
             onConfirm={onConfirmSearch}
@@ -262,10 +272,10 @@ export default function Notes() {
         {showHistory && searchHistory.length > 0 && (
           <View className="mt-4 bg-white rounded-2xl p-4 shadow-lg border border-slate-100 absolute left-4 right-4 z-20">
             <View className="flex flex-row items-center justify-between mb-3">
-              <Text className="text-base font-bold text-slate-900">搜索历史</Text>
+              <Text className="text-base font-bold text-slate-900">{ui('搜索历史', 'Search history')}</Text>
               <View className="flex flex-row items-center active:opacity-60" onClick={clearAllHistory}>
                 <View className="i-mdi-trash-can-outline text-lg text-slate-400 mr-1" />
-                <Text className="text-sm text-slate-400">清空</Text>
+                <Text className="text-sm text-slate-400">{ui('清空', 'Clear')}</Text>
               </View>
             </View>
             <View className="flex flex-wrap gap-2">
@@ -285,7 +295,7 @@ export default function Notes() {
             <View
               className="mt-4 pt-3 border-t border-slate-50 flex flex-row justify-center"
               onClick={() => setShowHistory(false)}>
-              <Text className="text-sm text-slate-400">收起</Text>
+              <Text className="text-sm text-slate-400">{ui('收起', 'Collapse')}</Text>
             </View>
           </View>
         )}
@@ -299,7 +309,7 @@ export default function Notes() {
               }`}
               onClick={() => handleSortChange('following')}>
               <Text className={`text-base font-bold ${sortBy === 'following' ? 'text-white' : 'text-slate-600'}`}>
-                追踪
+                {ui('追踪', 'Following')}
               </Text>
             </View>
             <View
@@ -308,7 +318,7 @@ export default function Notes() {
               }`}
               onClick={() => handleSortChange('latest')}>
               <Text className={`text-base font-bold ${sortBy === 'latest' ? 'text-white' : 'text-slate-600'}`}>
-                最新
+                {ui('最新', 'Latest')}
               </Text>
             </View>
             <View
@@ -317,7 +327,7 @@ export default function Notes() {
               }`}
               onClick={() => handleSortChange('hottest')}>
               <Text className={`text-base font-bold ${sortBy === 'hottest' ? 'text-white' : 'text-slate-600'}`}>
-                最热
+                {ui('最热', 'Hottest')}
               </Text>
             </View>
           </View>
@@ -328,13 +338,16 @@ export default function Notes() {
           <View className="flex flex-row items-center justify-between mt-3 bg-primary/10 rounded-xl px-4 py-3">
             <View className="flex flex-row items-center flex-1">
               <View className="i-mdi-pound text-lg text-primary mr-2" />
-              <Text className="text-base font-bold text-primary">话题：{currentTopic}</Text>
+              <Text className="text-base font-bold text-primary">
+                {ui('话题：', 'Topic: ')}
+                {currentTopic}
+              </Text>
             </View>
             <View
               className="flex flex-row items-center bg-white rounded-full px-3 py-1 active:opacity-70"
               onClick={handleClearFilter}>
               <View className="i-mdi-close text-base text-slate-600 mr-1" />
-              <Text className="text-sm font-bold text-slate-600">清除</Text>
+              <Text className="text-sm font-bold text-slate-600">{ui('清除', 'Clear')}</Text>
             </View>
           </View>
         )}
@@ -347,14 +360,16 @@ export default function Notes() {
             {users.length === 0 && !loading && keyword && (
               <View className="flex flex-col items-center justify-center py-20">
                 <View className="i-mdi-account-search-outline text-6xl text-slate-200 mb-4" />
-                <Text className="text-base text-slate-400">未找到相关用户</Text>
+                <Text className="text-base text-slate-400">{ui('未找到相关用户', 'No users found')}</Text>
               </View>
             )}
 
             {users.length === 0 && !loading && !keyword && (
               <View className="flex flex-col items-center justify-center py-20">
                 <View className="i-mdi-account-search text-6xl text-slate-200 mb-4" />
-                <Text className="text-base text-slate-400">输入用户名进行搜索</Text>
+                <Text className="text-base text-slate-400">
+                  {ui('输入用户名进行搜索', 'Enter a username to search')}
+                </Text>
               </View>
             )}
 
@@ -370,11 +385,17 @@ export default function Notes() {
                       className="w-14 h-14 rounded-full bg-slate-100 mr-4"
                     />
                     <View className="flex-1">
-                      <Text className="text-xl font-black text-slate-900 mb-1">{user.username || '用户'}</Text>
+                      <Text className="text-xl font-black text-slate-900 mb-1">
+                        {user.username || ui('用户', 'User')}
+                      </Text>
                       {user.bio && <Text className="text-base text-slate-600 line-clamp-1 mb-1">{user.bio}</Text>}
                       <View className="flex flex-row items-center">
-                        <Text className="text-sm text-slate-400 mr-4">{user.followers_count || 0} 被追踪</Text>
-                        <Text className="text-sm text-slate-400">{user.notes_count || 0} 笔记</Text>
+                        <Text className="text-sm text-slate-400 mr-4">
+                          {user.followers_count || 0} {ui('被追踪', 'followers')}
+                        </Text>
+                        <Text className="text-sm text-slate-400">
+                          {user.notes_count || 0} {ui('笔记', 'notes')}
+                        </Text>
                       </View>
                     </View>
                     <View className="i-mdi-chevron-right text-2xl text-slate-400" />
@@ -415,19 +436,21 @@ export default function Notes() {
 
         {searchMode === 'notes' && loadingMore && (
           <View className="py-4 flex items-center justify-center">
-            <Text className="text-sm text-slate-400">正在加载更多…</Text>
+            <Text className="text-sm text-slate-400">{ui('正在加载更多…', 'Loading more…')}</Text>
           </View>
         )}
         {searchMode === 'notes' && !hasMore && notes.length > 0 && (
           <View className="py-4 flex items-center justify-center">
-            <Text className="text-sm text-slate-400">已经到底了</Text>
+            <Text className="text-sm text-slate-400">{ui('已经到底了', 'You have reached the end')}</Text>
           </View>
         )}
 
         {notes.length === 0 && !loading && searchMode === 'notes' && (
           <View className="flex flex-col items-center justify-center py-20">
             <View className="i-mdi-note-text-outline text-6xl text-slate-200 mb-4" />
-            <Text className="text-base text-slate-400">还没有笔记，快去发布吧</Text>
+            <Text className="text-base text-slate-400">
+              {ui('还没有笔记，快去发布吧', 'No notes yet. Be the first to publish!')}
+            </Text>
           </View>
         )}
       </ScrollView>
@@ -444,6 +467,8 @@ export default function Notes() {
 }
 
 function NoteCard({note, onClick, onUserClick}: {note: Note; onClick: () => void; onUserClick: (uid: string) => void}) {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
   const coverImage = note.cover_image || (note.images && note.images.length > 0 ? note.images[0] : null)
 
   return (
@@ -472,7 +497,9 @@ function NoteCard({note, onClick, onUserClick}: {note: Note; onClick: () => void
               className="w-5 h-5 rounded-full mr-1.5 bg-slate-100"
               lazyLoad
             />
-            <Text className="text-sm text-slate-500 truncate flex-1">{note.author?.username || '用户'}</Text>
+            <Text className="text-sm text-slate-500 truncate flex-1">
+              {note.author?.username || ui('用户', 'User')}
+            </Text>
           </View>
           <View className="flex flex-row items-center ml-2">
             <View className="i-mdi-heart-outline text-sm text-slate-400 mr-1" />

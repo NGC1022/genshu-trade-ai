@@ -21,7 +21,15 @@ export default function Home() {
   const localizedContent = (source: string, english?: string) => {
     if (language !== 'en') return source
     if (english?.trim()) return english.trim()
-    return /[\u3400-\u9fff]/.test(source) ? t('name_translation_unavailable') : source
+    const result = source
+      .replaceAll('根书文创园', 'Root Culture Park')
+      .replaceAll('根书艺术馆', 'Root Culture Museum')
+      .replaceAll('根书', 'Root Calligraphy')
+      .replaceAll('根宝', 'Genbao')
+      .replaceAll('成人票', 'Adult Ticket')
+      .replaceAll('文化联票', 'Cultural Combo Ticket')
+      .replaceAll('开放时间调整通知', 'Opening Hours Update')
+    return /[\u3400-\u9fff]/.test(result) ? 'Root Culture information' : result
   }
   const [featuredProducts, setFeaturedProducts] = useState<SKU[]>(DEMO_CATALOG.slice(0, 4))
   const [tickets, setTickets] = useState<TicketType[]>([])

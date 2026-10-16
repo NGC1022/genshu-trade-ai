@@ -5,9 +5,25 @@ import {useAuth} from '@/contexts/AuthContext'
 import {checkUserPurchased, getProductReviews, getReviewSummary, getSKUDetail, toggleReviewLike} from '@/db/api'
 import type {ProductReview, SKU} from '@/db/types'
 import {useLanguage} from '@/hooks/useLanguage'
-import {t} from '@/utils/i18n'
 import {DEFAULT_AVATAR, DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 import {formatDateTime} from '@/utils/time'
+
+function fallbackEnglishProductName(name: string) {
+  const mappings: Array<[string, string]> = [
+    ['根书钥匙扣·福', 'Root Calligraphy Keychain · Fortune'],
+    ['根书钥匙扣·喜', 'Root Calligraphy Keychain · Joy'],
+    ['根书木质书签套装', 'Root Calligraphy Wooden Bookmark Set'],
+    ['根宝数字IP徽章', 'Genbao Digital IP Badge'],
+    ['根书艺术摆件·定制款', 'Root Calligraphy Art Ornament · Custom'],
+    ['根宝', 'Genbao'],
+    ['根书', 'Root Calligraphy']
+  ]
+  const exact = mappings.find(([zh]) => name.trim() === zh)
+  if (exact) return exact[1]
+  let result = name
+  for (const [zh, en] of mappings.slice(5)) result = result.replaceAll(zh, en)
+  return /[\u3400-\u9fff]/.test(result) ? 'Root Culture Product' : result
+}
 
 export default function ProductDetail() {
   const language = useLanguage()
@@ -171,7 +187,7 @@ export default function ProductDetail() {
         <View className="bg-card rounded-t-3xl p-6 mt--4 shadow-card">
           <View className="flex justify-between items-start mb-2">
             <Text className="text-2xl font-bold text-accent">
-              {language === 'en' ? product.name_en || t('name_translation_unavailable') : product.name}
+              {language === 'en' ? product.name_en || fallbackEnglishProductName(product.name) : product.name}
             </Text>
             {product.category === 'premium' && (
               <View className="bg-primary px-3 py-1 rounded">
@@ -314,7 +330,8 @@ export default function ProductDetail() {
               <View className="bg-muted bg-opacity-30 p-4 rounded-xl">
                 <Text className="text-base text-muted-foreground leading-relaxed">
                   {language === 'en'
-                    ? product.description_en || t('translation_unavailable_note')
+                    ? product.description_en ||
+                      'Root Culture artwork combining traditional craftsmanship with a contemporary aesthetic.'
                     : product.description || '根书文创精品，融合传统工艺与现代审美。'}
                 </Text>
               </View>
@@ -459,20 +476,22 @@ export default function ProductDetail() {
           </View>
 
           <View className="border-t border-border pt-4 mb-6">
-            <Text className="text-base font-bold text-accent mb-2">库存状态</Text>
+            <Text className="text-base font-bold text-accent mb-2">{ui('库存状态', 'Stock status')}</Text>
             <View className="flex items-center">
               <View
                 className={`w-2 h-2 rounded-full mr-2 ${product.stock_available > 0 ? 'bg-green-500' : 'bg-red-500'}`}
               />
               <Text className="text-base text-muted-foreground">
-                {product.stock_available > 0 ? `充足 (剩余 ${product.stock_available} 件)` : '已售罄'}
+                {product.stock_available > 0
+                  ? ui(`充足 (剩余 ${product.stock_available} 件)`, `In stock (${product.stock_available} remaining)`)
+                  : ui('已售罄', 'Sold out')}
               </Text>
             </View>
           </View>
 
           {product.category !== 'premium' && (
             <View className="border-t border-border pt-4 mb-6">
-              <Text className="text-base font-bold text-accent mb-3">购买数量</Text>
+              <Text className="text-base font-bold text-accent mb-3">{ui('购买数量', 'Quantity')}</Text>
               <View className="flex items-center">
                 <View
                   className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center border border-border"
@@ -495,7 +514,7 @@ export default function ProductDetail() {
         <Button
           className="w-full bg-gradient-primary text-white rounded-full py-3 text-lg font-bold shadow-elegant break-keep"
           onClick={handleBuy}>
-          {product.category === 'premium' ? '联系定制' : '立即购买'}
+          {product.category === 'premium' ? ui('联系定制', 'Request a custom quote') : ui('立即购买', 'Buy now')}
         </Button>
       </View>
     </View>

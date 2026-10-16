@@ -460,6 +460,82 @@ async function generateSupportReply(messages: SupportMessage[]): Promise<Support
 
   const q = (lastUser?.content || '').toLowerCase()
   const has = (...words: string[]) => words.some((w) => q.includes(w))
+  const englishMode = !containsCjk(lastUser?.content || '')
+
+  // English demo flow: keep the same rule-based intent matching, but return
+  // English content so switching the UI language never leaves a Chinese reply.
+  if (englishMode) {
+    if (has('price', 'quote', 'cost'))
+      return {
+        reply:
+          'Cross-border quotes depend on quantity, currency, shipping, and trade terms. Use AI Trade Assistant → Smart Quote to calculate the reference total and generate an English quote draft. Final prices must be confirmed by a business representative.',
+        suggestions: [
+          'How do I generate an English quote?',
+          'How should I confirm the exchange rate?',
+          'How should I quote 100 bookmarks?'
+        ]
+      }
+    if (has('delivery', 'shipping', 'lead time'))
+      return {
+        reply:
+          'Shipping time and cost vary by destination and transport method. To avoid unsupported promises, confirm the details with the carrier first. A safe inquiry phrase is “we will confirm this for you”.',
+        suggestions: [
+          'How should I ship to the United States?',
+          'Does the quote include shipping?',
+          'How do I handle an overseas inquiry?'
+        ]
+      }
+    if (has('custom', 'logo', 'engraving', 'packaging'))
+      return {
+        reply:
+          'Custom heritage-product orders can be submitted through the Custom Design section. Please provide the customization, quantity, delivery target, and destination country. Feasibility and final effects require artisan review before confirmation.',
+        suggestions: [
+          'What can be customized?',
+          'How do I quote a bulk custom order?',
+          'How long does customization take?'
+        ]
+      }
+    if (has('root calligraphy', 'heritage', 'culture'))
+      return {
+        reply:
+          'Root Calligraphy is a Sichuan intangible cultural heritage craft that uses natural tree roots as the medium for calligraphic art. Each piece is unique, making the products suitable for cultural gifts and exchange events.',
+        suggestions: [
+          'How can Root Calligraphy products go overseas?',
+          'Which products suit the US market?',
+          'How should I introduce the craft to buyers?'
+        ]
+      }
+    if (has('inquiry', 'reply', 'buyer'))
+      return {
+        reply:
+          'For an English inquiry, use AI Trade Assistant → Inquiry Analysis. It extracts the product, quantity, destination, buyer type, and purchasing scenario, then creates an English reply draft. Missing facts are marked for human confirmation before sending.',
+        suggestions: [
+          'Analyze an English inquiry',
+          'What should an English reply include?',
+          'How do I quote after inquiry analysis?'
+        ]
+      }
+    if (has('market', 'united states', 'japan', 'korea', 'singapore', 'overseas'))
+      return {
+        reply:
+          'Use AI Trade Assistant → Overseas Market Analysis for the United States, Japan, Singapore, or South Korea. It provides an assisted view of customer profiles, usage scenarios, cultural fit, and price fit. Market size, tariff, and policy facts still require source verification.',
+        suggestions: [
+          'What is the US customer profile?',
+          'What should I consider in Japan?',
+          'How do I assess cultural fit?'
+        ]
+      }
+    return {
+      reply:
+        'Hello! I am the Genshu AI Trade Support assistant. I can help with product localization, overseas market research, English inquiries, smart quotes, and custom collaborations. For prices, inventory, shipping, or trade terms, please use the relevant assistant workflow or ask a staff member to confirm the facts.',
+      suggestions: [
+        'What is Root Calligraphy?',
+        'How do I handle an English inquiry?',
+        'How do I quote for overseas buyers?',
+        'I want to sell in the United States'
+      ]
+    }
+  }
 
   if (has('价格', '报价', '多少钱', 'price')) {
     return {

@@ -3,8 +3,21 @@ import Taro, {useRouter} from '@tarojs/taro'
 import {useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {createNoteReport, reportComment} from '@/db/api'
+import {useLanguage} from '@/hooks/useLanguage'
+
+const REPORT_REASONS = [
+  {value: '色情低俗', en: 'Sexual or vulgar content'},
+  {value: '违法违规', en: 'Illegal or policy-violating content'},
+  {value: '虚假信息', en: 'False information'},
+  {value: '侵权内容', en: 'Copyright or other infringement'},
+  {value: '垃圾广告', en: 'Spam or advertising'},
+  {value: '人身攻击', en: 'Personal attack'},
+  {value: '其他原因', en: 'Other'}
+] as const
 
 export default function NoteReport() {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
   const router = useRouter()
   const {noteId, commentId} = router.params
   const {user} = useAuth()
@@ -12,17 +25,17 @@ export default function NoteReport() {
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const reasons = ['色情低俗', '违法违规', '虚假信息', '侵权内容', '垃圾广告', '人身攻击', '其他原因']
+  const reasons = REPORT_REASONS
 
-  const toggleReason = (reason: string) => {
-    if (selectedReasons.includes(reason)) {
-      setSelectedReasons(selectedReasons.filter((r) => r !== reason))
+  const toggleReason = (reason: (typeof REPORT_REASONS)[number]) => {
+    if (selectedReasons.includes(reason.value)) {
+      setSelectedReasons(selectedReasons.filter((r) => r !== reason.value))
     } else {
       if (selectedReasons.length >= 3) {
-        Taro.showToast({title: '最多选择3个理由', icon: 'none'})
+        Taro.showToast({title: ui('最多选择3个理由', 'Select up to 3 reasons'), icon: 'none'})
         return
       }
-      setSelectedReasons([...selectedReasons, reason])
+      setSelectedReasons([...selectedReasons, reason.value])
     }
   }
 
@@ -32,7 +45,7 @@ export default function NoteReport() {
       return
     }
     if (selectedReasons.length === 0) {
-      Taro.showToast({title: '请最少选择1个原因', icon: 'none'})
+      Taro.showToast({title: ui('请最少选择1个原因', 'Select at least 1 reason'), icon: 'none'})
       return
     }
 
@@ -53,15 +66,18 @@ export default function NoteReport() {
       error = res.error
     } else {
       setLoading(false)
-      Taro.showToast({title: '参数错误', icon: 'none'})
+      Taro.showToast({title: ui('参数错误', 'Invalid parameters'), icon: 'none'})
       return
     }
     setLoading(false)
 
     if (error) {
-      Taro.showToast({title: '举报失败', icon: 'none'})
+      Taro.showToast({title: ui('举报失败', 'Report failed'), icon: 'none'})
     } else {
-      Taro.showToast({title: '举报成功，我们会尽快处理', icon: 'success'})
+      Taro.showToast({
+        title: ui('举报成功，我们会尽快处理', 'Report submitted. We will review it soon.'),
+        icon: 'success'
+      })
       setTimeout(() => Taro.navigateBack(), 1500)
     }
   }
@@ -75,10 +91,15 @@ export default function NoteReport() {
               <View className="i-mdi-shield-alert text-xl text-blue-600 mr-2 mt-0.5" />
               <View className="flex-1">
                 <Text className="text-base font-bold text-blue-800 block mb-1">
-                  {commentId ? '举报评论' : '举报笔记'}须知
+                  {commentId
+                    ? ui('举报评论须知', 'Report comment guidelines')
+                    : ui('举报笔记须知', 'Report note guidelines')}
                 </Text>
                 <Text className="text-sm text-blue-700 leading-relaxed">
-                  请如实填写举报信息，我们会在24小时内进行审核处理。恶意举报将受到相应处罚。
+                  {ui(
+                    '请如实填写举报信息，我们会在24小时内进行审核处理。恶意举报将受到相应处罚。',
+                    'Please provide accurate report details. We will review them within 24 hours. Malicious reports may result in penalties.'
+                  )}
                 </Text>
               </View>
             </View>
@@ -86,21 +107,23 @@ export default function NoteReport() {
 
           <View className="mb-6">
             <View className="flex flex-row items-center justify-between mb-3">
-              <Text className="text-base font-bold text-slate-800">举报原因（必选，1-3个）</Text>
+              <Text className="text-base font-bold text-slate-800">
+                {ui('举报原因（必选，1-3个）', 'Report reasons (required, choose 1–3)')}
+              </Text>
               <Text className="text-sm text-slate-400">{selectedReasons.length}/3</Text>
             </View>
             <View className="flex flex-wrap gap-2">
               {reasons.map((reason) => {
-                const isSelected = selectedReasons.includes(reason)
+                const isSelected = selectedReasons.includes(reason.value)
                 return (
                   <View
-                    key={reason}
+                    key={reason.value}
                     className={`px-4 py-2 rounded-full border-2 transition-all active:opacity-80 ${
                       isSelected ? 'bg-primary border-primary' : 'bg-slate-50 border-transparent'
                     }`}
                     onClick={() => toggleReason(reason)}>
                     <Text className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-slate-600'}`}>
-                      {reason}
+                      {ui(reason.value, reason.en)}
                     </Text>
                   </View>
                 )
@@ -109,11 +132,16 @@ export default function NoteReport() {
           </View>
 
           <View className="mb-6">
-            <Text className="text-base font-bold text-slate-800 block mb-3">详细说明（可选）</Text>
+            <Text className="text-base font-bold text-slate-800 block mb-3">
+              {ui('详细说明（可选）', 'Additional details (optional)')}
+            </Text>
             <View className="bg-slate-50 rounded-lg p-3 border border-slate-100">
               <Textarea
                 className="w-full text-base"
-                placeholder="请详细描述举报原因，帮助我们更好地处理"
+                placeholder={ui(
+                  '请详细描述举报原因，帮助我们更好地处理',
+                  'Describe the reason for your report to help us review it'
+                )}
                 value={description}
                 onInput={(e) => setDescription(e.detail.value)}
                 maxlength={500}
@@ -129,7 +157,7 @@ export default function NoteReport() {
             onClick={handleSubmit}
             loading={loading}>
             <View className="py-2">
-              <Text className="text-white">提交举报</Text>
+              <Text className="text-white">{ui('提交举报', 'Submit report')}</Text>
             </View>
           </Button>
         </View>

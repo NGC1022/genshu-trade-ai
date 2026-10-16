@@ -4,6 +4,7 @@ import {useCallback, useEffect, useState} from 'react'
 import CommentItem from '@/components/CommentItem'
 import MentionSelector from '@/components/MentionSelector'
 import {useAuth} from '@/contexts/AuthContext'
+import {useLanguage} from '@/hooks/useLanguage'
 import {
   checkFollowing,
   checkNoteLike,
@@ -27,6 +28,8 @@ import {checkContentSafety} from '@/utils/security'
 import {formatDateTime} from '@/utils/time'
 
 export default function NoteDetail() {
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
   const router = useRouter()
   const {id, highlightCommentId} = router.params
   const {user} = useAuth()
@@ -570,19 +573,24 @@ export default function NoteDetail() {
           )}
 
           {/* 发布时间 */}
-          <Text className="text-sm text-slate-400 block mb-8">发布于 {formatDateTime(note.created_at)}</Text>
+          <Text className="text-sm text-slate-400 block mb-8">
+            {ui('发布于 ', 'Published ')}
+            {formatDateTime(note.created_at)}
+          </Text>
 
           {/* 评论区 */}
           <View className="border-t border-slate-100 pt-6">
             <View className="flex flex-row items-center justify-between mb-4">
-              <Text className="text-lg font-bold text-slate-900">共 {note.comments_count} 条评论</Text>
+              <Text className="text-lg font-bold text-slate-900">
+                {ui(`共 ${note.comments_count} 条评论`, `${note.comments_count} comments`)}
+              </Text>
               <View className="flex flex-row items-center gap-2">
                 <View
                   className={`px-3 py-1 rounded-full ${commentSortBy === 'latest' ? 'bg-primary' : 'bg-slate-100'}`}
                   onClick={() => handleSortChange('latest')}>
                   <Text
                     className={`text-sm font-medium ${commentSortBy === 'latest' ? 'text-white' : 'text-slate-600'}`}>
-                    最新
+                    {ui('最新', 'Latest')}
                   </Text>
                 </View>
                 <View
@@ -590,7 +598,7 @@ export default function NoteDetail() {
                   onClick={() => handleSortChange('hottest')}>
                   <Text
                     className={`text-sm font-medium ${commentSortBy === 'hottest' ? 'text-white' : 'text-slate-600'}`}>
-                    最热
+                    {ui('最热', 'Hottest')}
                   </Text>
                 </View>
               </View>

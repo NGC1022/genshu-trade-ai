@@ -4,8 +4,24 @@ import {useCallback, useState} from 'react'
 import {useAuth} from '@/contexts/AuthContext'
 import {createDraft, createNote, getDraftDetail, getSKUList, updateDraft, uploadNoteImage} from '@/db/api'
 import type {SKU} from '@/db/types'
+import {useLanguage} from '@/hooks/useLanguage'
 import {DEFAULT_PRODUCT_IMAGE} from '@/utils/images'
 import {checkNoteSafety} from '@/utils/security'
+
+const NOTE_LOCATION_LABELS: Record<string, {name: string; address: string}> = {
+  根书文创园游客中心: {
+    name: 'Genshu Cultural & Creative Park Visitor Center',
+    address: 'Visitor Center, Genshu Cultural & Creative Park, Qinglonghu Town, Fangshan District, Beijing'
+  },
+  根书艺术馆: {
+    name: 'Genshu Art Museum',
+    address: 'Genshu Cultural & Creative Park Art Museum, Qinglonghu Town, Fangshan District, Beijing'
+  },
+  根书文创园纪念品店: {
+    name: 'Genshu Cultural & Creative Park Gift Shop',
+    address: 'Building 1, Genshu Cultural & Creative Park, Qinglonghu Town, Fangshan District, Beijing'
+  }
+}
 
 const NOTE_LOCATION_OPTIONS = [
   {
@@ -22,6 +38,19 @@ export default function NoteCreate() {
   const router = useRouter()
   const {draftId} = router.params
   const {user} = useAuth()
+  const language = useLanguage()
+  const ui = (zh: string, en: string) => (language === 'en' ? en : zh)
+  const displayLocationName = (item: (typeof NOTE_LOCATION_OPTIONS)[number]) =>
+    ui(item.name, NOTE_LOCATION_LABELS[item.name]?.name || item.name)
+  const displayLocationAddress = (address: string) => {
+    const currentLocationPrefix = '我的当前位置（'
+    if (language === 'en' && address.startsWith(currentLocationPrefix) && address.endsWith('）')) {
+      return `My current location (${address.slice(currentLocationPrefix.length, -1)})`
+    }
+    const option = NOTE_LOCATION_OPTIONS.find((item) => item.address === address)
+    const translated = option ? NOTE_LOCATION_LABELS[option.name] : undefined
+    return ui(address, translated?.address || address)
+  }
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [images, setImages] = useState<string[]>([])
@@ -81,7 +110,7 @@ export default function NoteCreate() {
   const handleChooseImage = async () => {
     const remainingSlots = 9 - images.length
     if (remainingSlots <= 0) {
-      Taro.showToast({title: '最多只能上传9张图片', icon: 'none'})
+      Taro.showToast({title: ui('最多只能上传9张图片', 'You can upload up to 9 images'), icon: 'none'})
       return
     }
 
@@ -93,7 +122,7 @@ export default function NoteCreate() {
       })
       const tempFilePaths = res.tempFilePaths
 
-      Taro.showLoading({title: '上传中...'})
+      Taro.showLoading({title: ui('上传中...', 'Uploading...')})
       const uploadPromises = tempFilePaths.map((path) => uploadNoteImage({path, size: 0}))
       const results = await Promise.all(uploadPromises)
 
@@ -102,7 +131,7 @@ export default function NoteCreate() {
       setImages([...images, ...newImages])
       Taro.hideLoading()
     } catch (_e) {
-      Taro.showToast({title: '选择图片失败', icon: 'none'})
+      Taro.showToast({title: ui('选择图片失败', 'Failed to select images'), icon: 'none'})
     }
   }
 
@@ -117,11 +146,16 @@ export default function NoteCreate() {
 
   const handleSetCover = (index: number) => {
     setCoverIndex(index)
-    Taro.showToast({title: '已设为封面', icon: 'success', duration: 1000})
+    Taro.showToast({title: ui('已设为封面', 'Set as cover'), icon: 'success', duration: 1000})
   }
 
   const handleLongPressImage = (index: number) => {
-    const itemList = ['设为封面', '向前移动', '向后移动', '删除图片']
+    const itemList = [
+      ui('设为封面', 'Set as cover'),
+      ui('向前移动', 'Move forward'),
+      ui('向后移动', 'Move backward'),
+      ui('删除图片', 'Delete image')
+    ]
     Taro.showActionSheet({
       itemList,
       success: (res) => {
@@ -142,9 +176,9 @@ export default function NoteCreate() {
             } else if (coverIndex === index - 1) {
               setCoverIndex(index)
             }
-            Taro.showToast({title: '已向前移动', icon: 'success', duration: 1000})
+            Taro.showToast({title: ui('已向前移动', 'Moved forward'), icon: 'success', duration: 1000})
           } else {
-            Taro.showToast({title: '已经是第一张了', icon: 'none'})
+            Taro.showToast({title: ui('已经是第一张了', 'Already the first image'), icon: 'none'})
           }
         } else if (res.tapIndex === 2) {
           // 向后移动
@@ -160,9 +194,9 @@ export default function NoteCreate() {
             } else if (coverIndex === index + 1) {
               setCoverIndex(index)
             }
-            Taro.showToast({title: '已向后移动', icon: 'success', duration: 1000})
+            Taro.showToast({title: ui('已向后移动', 'Moved backward'), icon: 'success', duration: 1000})
           } else {
-            Taro.showToast({title: '已经是最后一张了', icon: 'none'})
+            Taro.showToast({title: ui('已经是最后一张了', 'Already the last image'), icon: 'none'})
           }
         } else if (res.tapIndex === 3) {
           // 删除图片
@@ -180,14 +214,17 @@ export default function NoteCreate() {
         longitude: res.longitude,
         address: res.name || res.address
       })
-      Taro.showToast({title: '位置已添加', icon: 'success'})
+      Taro.showToast({title: ui('位置已添加', 'Location added'), icon: 'success'})
     } catch (e: any) {
       console.error('选择位置失败:', e)
       if (e.errMsg?.includes('auth deny')) {
         Taro.showModal({
-          title: '需要位置权限',
-          content: '请在设置中允许小程序访问您的位置信息',
-          confirmText: '去设置',
+          title: ui('需要位置权限', 'Location permission required'),
+          content: ui(
+            '请在设置中允许小程序访问您的位置信息',
+            'Please allow the app to access your location in Settings'
+          ),
+          confirmText: ui('去设置', 'Go to Settings'),
           success: (res) => {
             if (res.confirm) {
               Taro.openSetting()
@@ -195,7 +232,7 @@ export default function NoteCreate() {
           }
         })
       } else {
-        Taro.showToast({title: '未选择位置', icon: 'none'})
+        Taro.showToast({title: ui('未选择位置', 'No location selected'), icon: 'none'})
       }
     }
   }
@@ -209,18 +246,24 @@ export default function NoteCreate() {
         address: `我的当前位置（${res.latitude.toFixed(5)}, ${res.longitude.toFixed(5)}）`
       })
       setShowLocationTools(false)
-      Taro.showToast({title: '已获取当前位置', icon: 'success'})
+      Taro.showToast({title: ui('已获取当前位置', 'Current location added'), icon: 'success'})
     } catch (e: any) {
       Taro.showToast({
-        title: e?.errMsg?.includes('auth deny') ? '请在设置中允许定位权限' : '暂时无法获取当前位置',
+        title: e?.errMsg?.includes('auth deny')
+          ? ui('请在设置中允许定位权限', 'Please allow location access in Settings')
+          : ui('暂时无法获取当前位置', 'Unable to get your current location'),
         icon: 'none'
       })
     }
   }
 
-  const filteredLocationOptions = NOTE_LOCATION_OPTIONS.filter((item) =>
-    `${item.name}${item.address}`.includes(locationKeyword.trim())
-  )
+  const filteredLocationOptions = NOTE_LOCATION_OPTIONS.filter((item) => {
+    const keyword = locationKeyword.trim().toLowerCase()
+    const searchableText = `${item.name}${item.address}${displayLocationName(item)}${displayLocationAddress(
+      item.address
+    )}`.toLowerCase()
+    return searchableText.includes(keyword)
+  })
 
   const handleAddProduct = () => {
     // 将已选商品存入缓存供选择页初始化
@@ -236,11 +279,11 @@ export default function NoteCreate() {
 
   const handleSubmit = async () => {
     if (!user) {
-      Taro.showToast({title: '请先登录', icon: 'none'})
+      Taro.showToast({title: ui('请先登录', 'Please log in first'), icon: 'none'})
       return
     }
     if (!content.trim()) {
-      Taro.showToast({title: '请填写笔记内容', icon: 'none'})
+      Taro.showToast({title: ui('请填写笔记内容', 'Please enter note content'), icon: 'none'})
       return
     }
 
@@ -248,8 +291,11 @@ export default function NoteCreate() {
     const safetyCheck = checkNoteSafety(title, content)
     if (!safetyCheck.isSafe) {
       Taro.showModal({
-        title: '发布失败',
-        content: `内容未通过安全审核：${safetyCheck.reason}。请修改后重试。`,
+        title: ui('发布失败', 'Publish failed'),
+        content: ui(
+          `内容未通过安全审核：${safetyCheck.reason}。请修改后重试。`,
+          'Content failed the safety review. Please revise and try again.'
+        ),
         showCancel: false
       })
       return
@@ -269,9 +315,12 @@ export default function NoteCreate() {
     setLoading(false)
 
     if (error) {
-      Taro.showToast({title: `发布失败: ${String(error)}`, icon: 'none'})
+      Taro.showToast({
+        title: language === 'en' ? 'Publish failed. Please try again.' : `发布失败: ${String(error)}`,
+        icon: 'none'
+      })
     } else {
-      Taro.showToast({title: '发布成功', icon: 'success'})
+      Taro.showToast({title: ui('发布成功', 'Published successfully'), icon: 'success'})
       // 如果是从草稿编辑的，删除草稿
       if (draftId) {
         await import('@/db/api').then((m) => m.deleteDraft(draftId))
@@ -282,7 +331,7 @@ export default function NoteCreate() {
 
   const handleSaveDraft = async () => {
     if (!user) {
-      Taro.showToast({title: '请先登录', icon: 'none'})
+      Taro.showToast({title: ui('请先登录', 'Please log in first'), icon: 'none'})
       return
     }
 
@@ -290,8 +339,11 @@ export default function NoteCreate() {
     const safetyCheck = checkNoteSafety(title, content)
     if (!safetyCheck.isSafe) {
       Taro.showModal({
-        title: '保存失败',
-        content: `内容未通过安全审核：${safetyCheck.reason}。请修改后重试。`,
+        title: ui('保存失败', 'Save failed'),
+        content: ui(
+          `内容未通过安全审核：${safetyCheck.reason}。请修改后重试。`,
+          'Content failed the safety review. Please revise and try again.'
+        ),
         showCancel: false
       })
       return
@@ -313,20 +365,20 @@ export default function NoteCreate() {
       const {error} = await updateDraft(draftId, draftData)
       setLoading(false)
       if (!error) {
-        Taro.showToast({title: '草稿已更新', icon: 'success'})
+        Taro.showToast({title: ui('草稿已更新', 'Draft updated'), icon: 'success'})
         setTimeout(() => Taro.navigateBack(), 1500)
       } else {
-        Taro.showToast({title: '保存失败', icon: 'none'})
+        Taro.showToast({title: ui('保存失败', 'Save failed'), icon: 'none'})
       }
     } else {
       // 创建新草稿
       const {error} = await createDraft(draftData)
       setLoading(false)
       if (!error) {
-        Taro.showToast({title: '已保存到草稿箱', icon: 'success'})
+        Taro.showToast({title: ui('已保存到草稿箱', 'Saved to drafts'), icon: 'success'})
         setTimeout(() => Taro.navigateBack(), 1500)
       } else {
-        Taro.showToast({title: '保存失败', icon: 'none'})
+        Taro.showToast({title: ui('保存失败', 'Save failed'), icon: 'none'})
       }
     }
   }
@@ -339,7 +391,7 @@ export default function NoteCreate() {
           <View className="mb-6">
             <Textarea
               className="w-full text-base leading-relaxed"
-              placeholder="这一刻的想法..."
+              placeholder={ui('这一刻的想法...', 'What are you thinking about right now...?')}
               value={content}
               onInput={(e) => setContent(e.detail.value)}
               maxlength={2000}
@@ -358,7 +410,7 @@ export default function NoteCreate() {
                 <Image src={src} className="w-full h-full" mode="aspectFill" />
                 {coverIndex === index && (
                   <View className="absolute top-1 left-1 bg-primary px-2 py-0.5 rounded">
-                    <Text className="text-white text-xs font-bold">封面</Text>
+                    <Text className="text-white text-xs font-bold">{ui('封面', 'Cover')}</Text>
                   </View>
                 )}
                 <View
@@ -382,11 +434,11 @@ export default function NoteCreate() {
           <View className="border-t border-slate-100 pt-4 mb-4">
             <View className="flex flex-row items-center mb-2">
               <View className="i-mdi-format-title text-xl text-slate-600 mr-2" />
-              <Text className="text-sm text-slate-500">标题（可选）</Text>
+              <Text className="text-sm text-slate-500">{ui('标题（可选）', 'Title (optional)')}</Text>
             </View>
             <Input
               className="text-lg font-medium w-full bg-slate-50 rounded-lg px-3 py-2"
-              placeholder="给你的笔记起个标题"
+              placeholder={ui('给你的笔记起个标题', 'Give your note a title')}
               value={title}
               onInput={(e) => setTitle(e.detail.value)}
               maxlength={50}
@@ -397,7 +449,9 @@ export default function NoteCreate() {
           <View className="border-t border-slate-100 py-4 mb-4">
             <View className="flex flex-row items-center mb-3">
               <View className="i-mdi-pound text-xl text-primary mr-2" />
-              <Text className="text-base text-slate-700 font-semibold">话题（最多3个）</Text>
+              <Text className="text-base text-slate-700 font-semibold">
+                {ui('话题（最多3个）', 'Topics (up to 3)')}
+              </Text>
             </View>
 
             {/* 已添加的话题 */}
@@ -420,7 +474,7 @@ export default function NoteCreate() {
               <View className="flex flex-row items-center">
                 <Input
                   className="flex-1 text-base bg-slate-50 rounded-lg px-3 py-2"
-                  placeholder="输入话题名称"
+                  placeholder={ui('输入话题名称', 'Enter a topic')}
                   value={currentTopic}
                   onInput={(e) => setCurrentTopic(e.detail.value)}
                 />
@@ -443,7 +497,9 @@ export default function NoteCreate() {
             className="flex flex-row items-center border-t border-slate-100 py-4 mb-4 active:bg-slate-50"
             onClick={() => setShowLocationTools((current) => !current)}>
             <View className="i-mdi-map-marker text-xl text-blue-500 mr-2" />
-            <Text className="flex-1 text-base text-slate-700">{location ? location.address : '添加位置'}</Text>
+            <Text className="flex-1 text-base text-slate-700">
+              {location ? displayLocationAddress(location.address) : ui('添加位置', 'Add location')}
+            </Text>
             {location && (
               <View
                 className="i-mdi-close-circle text-lg text-slate-400"
@@ -459,15 +515,15 @@ export default function NoteCreate() {
             <View className="bg-blue-50 rounded-xl p-3 mb-4 border border-blue-100">
               <View className="flex flex-row gap-2 mb-3">
                 <View className="flex-1 bg-white rounded-lg px-3 py-2" onClick={handleUseCurrentLocation}>
-                  <Text className="text-sm text-blue-700 font-bold">使用当前位置</Text>
+                  <Text className="text-sm text-blue-700 font-bold">{ui('使用当前位置', 'Use current location')}</Text>
                 </View>
                 <View className="flex-1 bg-white rounded-lg px-3 py-2" onClick={handleChooseLocation}>
-                  <Text className="text-sm text-blue-700 font-bold">打开地图选择</Text>
+                  <Text className="text-sm text-blue-700 font-bold">{ui('打开地图选择', 'Choose on map')}</Text>
                 </View>
               </View>
               <Input
                 className="bg-white rounded-lg px-3 py-2 text-sm"
-                placeholder="搜索园区、艺术馆或店铺"
+                placeholder={ui('搜索园区、艺术馆或店铺', 'Search parks, museums, or shops')}
                 value={locationKeyword}
                 onInput={(e) => setLocationKeyword(e.detail.value)}
               />
@@ -479,8 +535,8 @@ export default function NoteCreate() {
                     setLocation(item)
                     setShowLocationTools(false)
                   }}>
-                  <Text className="text-sm font-bold text-slate-700 block">{item.name}</Text>
-                  <Text className="text-xs text-slate-500 block mt-1">{item.address}</Text>
+                  <Text className="text-sm font-bold text-slate-700 block">{displayLocationName(item)}</Text>
+                  <Text className="text-xs text-slate-500 block mt-1">{displayLocationAddress(item.address)}</Text>
                 </View>
               ))}
             </View>
@@ -490,7 +546,9 @@ export default function NoteCreate() {
           <View className="border-t border-slate-100 py-4 mb-4">
             <View className="flex flex-row items-center mb-3 active:opacity-60" onClick={handleAddProduct}>
               <View className="i-mdi-cart-plus text-xl text-amber-600 mr-2" />
-              <Text className="text-base font-medium text-slate-700">推荐相关商品（最多3件）</Text>
+              <Text className="text-base font-medium text-slate-700">
+                {ui('推荐相关商品（最多3件）', 'Recommend related products (up to 3)')}
+              </Text>
               <View className="i-mdi-chevron-right text-lg text-slate-400 ml-auto" />
             </View>
             {recommendedSKUs.length > 0 && (
@@ -531,7 +589,7 @@ export default function NoteCreate() {
             onClick={handleSaveDraft}
             loading={loading}>
             <View className="py-3">
-              <Text className="text-slate-700">保存草稿</Text>
+              <Text className="text-slate-700">{ui('保存草稿', 'Save draft')}</Text>
             </View>
           </Button>
           <Button
@@ -539,7 +597,7 @@ export default function NoteCreate() {
             onClick={handleSubmit}
             loading={loading}>
             <View className="py-3">
-              <Text className="text-white">发布</Text>
+              <Text className="text-white">{ui('发布', 'Publish')}</Text>
             </View>
           </Button>
         </View>

@@ -5,7 +5,6 @@ import {DEMO_TICKET_TYPES} from '@/data/demoCatalog'
 import {getTicketTypeList} from '@/db/api'
 import type {TicketType} from '@/db/types'
 import {useLanguage} from '@/hooks/useLanguage'
-import {t} from '@/utils/i18n'
 
 export default function Tickets() {
   const language = useLanguage()
@@ -15,9 +14,15 @@ export default function Tickets() {
     const known: Record<string, string> = {
       乐山大佛景区门票: 'Leshan Giant Buddha Scenic Area Ticket',
       根书艺术馆深度讲解: 'Root Calligraphy Museum Guided Tour',
-      联票: 'Combo Ticket'
+      联票: 'Combo Ticket',
+      根书文创园成人票: 'Root Culture Park Adult Ticket',
+      根书文创园文化联票: 'Root Culture Park Combo Ticket',
+      专题讲解服务: 'Themed Guided Tour'
     }
-    return known[text] || (/[\u3400-\u9fff]/.test(text) ? t('translation_pending') : text)
+    if (known[text]) return known[text]
+    let result = text.replaceAll('根书文创园', 'Root Culture Park').replaceAll('根书', 'Root Calligraphy')
+    result = result.replaceAll('成人票', 'Adult Ticket').replaceAll('文化联票', 'Cultural Combo Ticket')
+    return /[\u3400-\u9fff]/.test(result) ? 'Root Culture Ticket' : result
   }
   const [tickets, setTickets] = useState<TicketType[]>(DEMO_TICKET_TYPES)
 

@@ -21,12 +21,30 @@ const SORT_OPTIONS: Array<{key: SortMode; labelKey: string}> = [
 const monthlySales = (product: SKU) => Number(product.monthly_sold ?? Math.round(product.stock_sold * 0.35))
 const totalSales = (product: SKU) => Number(product.stock_sold || 0)
 
+function fallbackEnglishProductName(name: string) {
+  const mappings: Array<[string, string]> = [
+    ['根书钥匙扣·福', 'Root Calligraphy Keychain · Fortune'],
+    ['根书钥匙扣·喜', 'Root Calligraphy Keychain · Joy'],
+    ['根书木质书签套装', 'Root Calligraphy Wooden Bookmark Set'],
+    ['根宝数字IP徽章', 'Genbao Digital IP Badge'],
+    ['根书艺术摆件·定制款', 'Root Calligraphy Art Ornament · Custom'],
+    ['根书文创园', 'Root Culture Park'],
+    ['根宝', 'Genbao'],
+    ['根书', 'Root Calligraphy']
+  ]
+  const exact = mappings.find(([zh]) => name.trim() === zh)
+  if (exact) return exact[1]
+  let result = name
+  for (const [zh, en] of mappings.slice(5)) result = result.replaceAll(zh, en)
+  return /[\u3400-\u9fff]/.test(result) ? 'Root Culture Product' : result
+}
+
 export default function Products() {
   const language = useLanguage()
   const displayProductName = (product: SKU) => {
     if (language !== 'en') return product.name
     const englishName = (product as SKU & {name_en?: string}).name_en
-    return englishName?.trim() || (/['"㐀-鿿]/.test(product.name) ? t('english_name_missing') : product.name)
+    return englishName?.trim() || fallbackEnglishProductName(product.name)
   }
   // 先渲染本地目录，避免远端数据库为空、未授权或网络较慢时出现整页空白。
   const [allProducts, setAllProducts] = useState<SKU[]>(DEMO_CATALOG)
