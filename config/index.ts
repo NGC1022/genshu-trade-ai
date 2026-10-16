@@ -11,7 +11,7 @@ import lintConfig from './lint'
 import prodConfig from './prod'
 
 const base = String(process.argv[process.argv.length - 1])
-const publicPath = /^http/.test(base) ? base : '/'
+const publicPath = process.env.TARO_APP_PUBLIC_PATH || (/^http/.test(base) ? base : '/')
 
 const staticBannerAssetsPlugin: Plugin = {
   name: 'emit-static-banner-assets',
