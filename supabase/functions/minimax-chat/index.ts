@@ -27,6 +27,10 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
+function normalizeGatewayToken(raw: string): string {
+  return raw.trim().replace(/^['"]|['"]$/g, '').replace(/^Bearer\s+/i, '').trim()
+}
+
 Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {headers: CORS_HEADERS})
@@ -50,12 +54,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({error: 'Invalid request body'}, 400)
   }
 
-  const apiKey = Deno.env.get('INTEGRATIONS_API_KEY')
+  const rawApiKey = Deno.env.get('INTEGRATIONS_API_KEY') || ''
+  const apiKey = normalizeGatewayToken(rawApiKey)
   if (!apiKey) {
     return json({error: 'Server configuration error'}, 500)
   }
+  if (apiKey.split('.').length !== 3) {
+    return json({error: 'INTEGRATIONS_API_KEY 格式错误：请填入 MiniMax 网关提供的 JWT 令牌，不要填普通 sk- API Key'}, 500)
+  }
 
   try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 25_000)
     const upstream = await fetch(
       'https://app-9dlnarhqk45d-api-rLobPAn0n7m9-gateway.appmiaoda.com/v1/chat/completions',
       {
@@ -64,15 +74,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
           'Content-Type': 'application/json',
           'X-Gateway-Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller.signal
       }
     )
+    clearTimeout(timeout)
     const text = await upstream.text()
     return new Response(text, {
       status: upstream.ok ? 200 : 502,
       headers: {...CORS_HEADERS, 'Content-Type': 'application/json'}
     })
   } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      return json({error: 'AI网关响应超时，请稍后重试'}, 504)
+    }
     return json({error: e instanceof Error ? e.message : 'AI服务调用失败'}, 502)
   }
 })

@@ -30,7 +30,18 @@ async function callMinimax(messages: Array<{role: string; content: unknown}>): P
     body: {model: 'MiniMax-M3', messages, temperature: 0.7, top_p: 0.95, max_completion_tokens: 2048}
   })
   if (error) {
-    const msg = error instanceof Error ? error.message : 'AI服务调用失败'
+    let detail = ''
+    try {
+      const response = (error as {context?: Response}).context
+      const raw = response?.text ? await response.text() : ''
+      if (raw) {
+        const parsed = JSON.parse(raw) as {msg?: string; error?: string; message?: string}
+        detail = parsed.msg || parsed.error || parsed.message || raw
+      }
+    } catch {
+      // Keep the generic error when the Edge Function returned a non-JSON body.
+    }
+    const msg = detail || (error instanceof Error ? error.message : 'AI服务调用失败')
     throw new Error(msg.includes('timeout') ? '请求超时，请重试' : `AI服务暂时不可用：${msg}`)
   }
   const resp = data as UpstreamResponse | null
