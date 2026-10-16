@@ -100,22 +100,30 @@ export default function TicketDetail() {
                 <View className="bg-primary/5 p-6 rounded-2xl border border-primary/10">
                   <View className="flex flex-row items-center mb-4">
                     <View className="i-mdi-ticket-confirmation text-2xl text-primary mr-3" />
-                    <Text className="text-lg font-black text-foreground">乐山大佛景区门票</Text>
+                    <Text className="text-lg font-black text-foreground">
+                      {ui('乐山大佛景区门票', 'Leshan Giant Buddha Scenic Area Ticket')}
+                    </Text>
                   </View>
                   <View className="flex flex-row items-center mb-4">
                     <View className="i-mdi-account-tie-voice text-2xl text-primary mr-3" />
-                    <Text className="text-lg font-black text-foreground">根书艺术馆深度讲解</Text>
+                    <Text className="text-lg font-black text-foreground">
+                      {ui('根书艺术馆深度讲解', 'Root Culture Museum Guided Tour')}
+                    </Text>
                   </View>
                   <View className="flex flex-row items-center">
                     <View className="i-mdi-gift text-2xl text-primary mr-3" />
-                    <Text className="text-lg font-black text-foreground">文创店专属9折优惠权益</Text>
+                    <Text className="text-lg font-black text-foreground">
+                      {ui('文创店专属9折优惠权益', '10% off at the cultural products shop')}
+                    </Text>
                   </View>
                 </View>
               ) : ticket.name.includes('乐山大佛') ? (
                 <View className="bg-primary/5 p-6 rounded-2xl border border-primary/10">
                   <View className="flex flex-row items-center">
                     <View className="i-mdi-ticket-confirmation text-2xl text-primary mr-3" />
-                    <Text className="text-lg font-black text-foreground">乐山大佛景区成人票(单票)</Text>
+                    <Text className="text-lg font-black text-foreground">
+                      {ui('乐山大佛景区成人票(单票)', 'Leshan Giant Buddha Adult Ticket')}
+                    </Text>
                   </View>
                 </View>
               ) : (
@@ -136,11 +144,16 @@ export default function TicketDetail() {
 
             <View className="space-y-6 mt-6">
               <View className="bg-muted bg-opacity-50 p-6 rounded-xl border border-border">
-                <Text className="text-base font-bold text-foreground block mb-4">联名景区付费景点</Text>
+                <Text className="text-base font-bold text-foreground block mb-4">
+                  {ui('联名景区付费景点', 'Partner attractions')}
+                </Text>
 
                 <View>
                   <Text className="text-base text-muted-foreground leading-relaxed">
-                    包含根书艺术体验馆、古法造纸坊、活字印刷体验区。周边包含：青龙湖湿地公园、云雾山观景台等。
+                    {ui(
+                      '包含根书艺术体验馆、古法造纸坊、活字印刷体验区。周边包含：青龙湖湿地公园、云雾山观景台等。',
+                      'Includes the Root Culture Experience Hall, traditional papermaking workshop, and movable-type printing zone. Nearby highlights include Qinglong Lake Wetland Park and Yunwu Mountain Viewing Platform.'
+                    )}
                   </Text>
                 </View>
               </View>
@@ -149,8 +162,12 @@ export default function TicketDetail() {
 
                 <View>
                   <Text className="text-base text-muted-foreground leading-relaxed">
-                    凭此套票在景区内任意指定纪念品商店购买周边商品，可享受{' '}
-                    <Text className="text-primary font-bold">9折</Text> 优惠。
+                    {ui(
+                      '凭此套票在景区内任意指定纪念品商店购买周边商品，可享受',
+                      'Show this pass at designated souvenir shops for'
+                    )}{' '}
+                    <Text className="text-primary font-bold">{ui('9折', '10% off')}</Text>{' '}
+                    {ui('优惠。', 'your purchase.')}
                   </Text>
                 </View>
               </View>
@@ -165,13 +182,21 @@ export default function TicketDetail() {
                 <View className="flex items-start py-1">
                   <View className="i-mdi-clock-outline text-lg text-primary mr-2 mt-0.5" />
                   <Text className="text-base text-muted-foreground flex-1">
-                    有效期：购买后{ticket.validity_days}天内有效
+                    {ui(
+                      `有效期：购买后${ticket.validity_days}天内有效`,
+                      `Valid for ${ticket.validity_days} days after purchase`
+                    )}
                   </Text>
                 </View>
               )}
               <View className="flex items-start py-1">
                 <View className="i-mdi-information-outline text-lg text-primary mr-2 mt-0.5" />
-                <Text className="text-base text-muted-foreground flex-1">请提前预约参观时间，凭电子票券入场</Text>
+                <Text className="text-base text-muted-foreground flex-1">
+                  {ui(
+                    '请提前预约参观时间，凭电子票券入场',
+                    'Please reserve a visiting time in advance and present your e-ticket at entry.'
+                  )}
+                </Text>
               </View>
             </View>
           </View>
@@ -182,7 +207,7 @@ export default function TicketDetail() {
         <Button
           className="w-full bg-gradient-primary text-white rounded-full py-4 text-lg font-bold shadow-elegant break-keep"
           onClick={handleBuy}>
-          立即预订
+          {ui('立即预订', 'Book now')}
         </Button>
       </View>
     </View>

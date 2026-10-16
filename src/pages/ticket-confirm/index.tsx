@@ -277,14 +277,19 @@ export default function TicketConfirm() {
             </View>
             <View className="flex items-center justify-between py-2">
               <Text className="text-base text-muted-foreground">{ui('购买数量', 'Quantity')}</Text>
-              <Text className="text-base text-foreground">{quantity}张</Text>
+              <Text className="text-base text-foreground">
+                {quantity}
+                {ui('张', parseInt(quantity || '1', 10) === 1 ? ' ticket' : ' tickets')}
+              </Text>
             </View>
           </View>
 
           <View className="bg-card rounded-xl p-4 mb-4 shadow-card">
             <Text className="text-base font-bold text-foreground mb-3">{ui('参观信息', 'Visit information')}</Text>
             <View className="mb-4">
-              <Text className="text-base text-muted-foreground mb-2 block">参观日期 *（仅限近7天，周一闭园）</Text>
+              <Text className="text-base text-muted-foreground mb-2 block">
+                {ui('参观日期 *（仅限近7天，周一闭园）', 'Visit date * (within 7 days; closed on Mondays)')}
+              </Text>
               <Picker
                 mode="date"
                 start={dateRange.start}
@@ -292,7 +297,7 @@ export default function TicketConfirm() {
                 value={visitDate}
                 onChange={handleDateChange}>
                 <View className="bg-input rounded-lg border border-border px-3 py-3 flex flex-row items-center justify-between">
-                  <Text className="text-foreground">{visitDate || '请选择参观日期'}</Text>
+                  <Text className="text-foreground">{visitDate || ui('请选择参观日期', 'Select a visit date')}</Text>
                   <View className="i-mdi-calendar text-primary text-xl" />
                 </View>
               </Picker>
@@ -302,7 +307,7 @@ export default function TicketConfirm() {
               <View className="bg-input rounded-lg border border-border px-3 py-2">
                 <Input
                   className="w-full text-foreground"
-                  placeholder="请输入11位手机号"
+                  placeholder={ui('请输入11位手机号', 'Enter an 11-digit phone number')}
                   type="number"
                   maxlength={11}
                   value={contactPhone}
@@ -314,7 +319,9 @@ export default function TicketConfirm() {
 
           {visitors.map((visitor, index) => (
             <View key={index} className="bg-card rounded-xl p-4 mb-4 shadow-card">
-              <Text className="text-base font-bold text-foreground mb-3">第{index + 1}位参访人信息</Text>
+              <Text className="text-base font-bold text-foreground mb-3">
+                {ui(`第${index + 1}位参访人信息`, `Visitor ${index + 1} information`)}
+              </Text>
               <View className="space-y-4">
                 <View>
                   <Text className="text-base text-muted-foreground mb-2">{ui('姓名 *', 'Name *')}</Text>
@@ -348,12 +355,12 @@ export default function TicketConfirm() {
                       className="w-full text-foreground"
                       placeholder={
                         visitor.idType === 'id_card'
-                          ? '18位身份证号'
+                          ? ui('18位身份证号', '18-digit ID number')
                           : visitor.idType === 'hk_mo_pass'
-                            ? 'H/M开头+8-10位数字'
+                            ? ui('H/M开头+8-10位数字', 'H/M followed by 8–10 digits')
                             : visitor.idType === 'tw_pass'
-                              ? '8-10位数字'
-                              : '5-20位字母数字组合'
+                              ? ui('8-10位数字', '8–10 digits')
+                              : ui('5-20位字母数字组合', '5–20 letters and numbers')
                       }
                       value={visitor.idNumber}
                       onInput={(e) => updateVisitor(index, 'idNumber', e.detail.value)}
@@ -381,7 +388,9 @@ export default function TicketConfirm() {
             <View className="border-t border-border pt-2 mt-2">
               <View className="flex items-center justify-between">
                 <Text className="text-base font-bold text-foreground">{ui('实付金额', 'Amount payable')}</Text>
-                <Text className="text-xl font-bold text-primary">{totalAmount === 0 ? '免费' : `¥${totalAmount}`}</Text>
+                <Text className="text-xl font-bold text-primary">
+                  {totalAmount === 0 ? ui('免费', 'Free') : `¥${totalAmount}`}
+                </Text>
               </View>
             </View>
           </View>
@@ -391,13 +400,15 @@ export default function TicketConfirm() {
       <View className="fixed bottom-0 left-0 right-0 bg-card p-4 border-t border-border">
         <View className="flex items-center justify-between mb-3">
           <Text className="text-base text-muted-foreground">{ui('合计：', 'Total:')}</Text>
-          <Text className="text-xl font-bold text-primary">{totalAmount === 0 ? '免费' : `¥${totalAmount}`}</Text>
+          <Text className="text-xl font-bold text-primary">
+            {totalAmount === 0 ? ui('免费', 'Free') : `¥${totalAmount}`}
+          </Text>
         </View>
         <Button
           className="w-full bg-gradient-primary text-white rounded-full py-3 text-base font-bold break-keep"
           onClick={handleSubmit}
           loading={loading}>
-          确认购买
+          {ui('确认购买', 'Confirm purchase')}
         </Button>
       </View>
     </View>
